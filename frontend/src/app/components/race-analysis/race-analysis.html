@@ -1,0 +1,52 @@
+<div class="analysis-container">
+    <header class="analysis-header">
+        <div class="header-top">
+            <a routerLink="/" class="back-link">← Back to Dashboard</a>
+            <div class="venue-badge" *ngIf="track">{{ track }} - {{ date }}</div>
+        </div>
+        <div class="header-nav">
+            <button class="nav-btn" (click)="goToPreviousRace()" [disabled]="raceId === 1">← Prev Race</button>
+            <h1>Race {{ raceId }}</h1>
+            <button class="nav-btn" (click)="goToNextRace()" [disabled]="raceId === 8">Next Race →</button>
+        </div>
+    </header>
+
+    <div *ngIf="loading" class="spinner-container">
+        <div class="spinner"></div>
+    </div>
+
+    <table class="analysis-table" *ngIf="!loading && analysis.length > 0">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Horse</th>
+                <th>Rider</th>
+                <th>Calc Win %</th>
+                <th>V85 %</th>
+                <th>Edge</th>
+                <th>Recent Form</th>
+                <th>Records (A/V)</th>
+                <th>Earnings</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let horse of analysis; let i = index">
+                <td class="rank-cell">{{ i + 1 }}{{ i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th' }}</td>
+                <td>{{ horse.name }}</td>
+                <td>{{ horse.rider }}</td>
+                <td class="prob-cell">{{ (horse.calculated_probability * 100).toFixed(1) }}%</td>
+                <td>{{ horse.bet_percentage }}%</td>
+                <td [class.positive-edge]="horse.calculated_probability * 100 > horse.bet_percentage">
+                    {{ (horse.calculated_probability * 100 - horse.bet_percentage).toFixed(1) }}%
+                </td>
+                <td><span class="form-badge">{{ horse.recent_form }}</span></td>
+                <td>{{ horse.record_auto }} / {{ horse.record_volt }}</td>
+                <td>{{ (horse.total_earnings / 1000).toFixed(0) }}k kr</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div *ngIf="!loading && analysis.length === 0" class="empty-state">
+        No analysis data found for this race.
+    </div>
+</div>

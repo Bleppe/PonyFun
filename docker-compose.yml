@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3005:3005"
+    networks:
+      - ponyfun-net
+    restart: always
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "4201:80"
+    networks:
+      - ponyfun-net
+    depends_on:
+      - backend
+    restart: always
+
+networks:
+  ponyfun-net:
+    driver: bridge
