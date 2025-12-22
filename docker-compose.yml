@@ -3,6 +3,10 @@ services:
     build: ./backend
     ports:
       - "3005:3005"
+    environment:
+      - DATABASE_PATH=/app/data/ponyfun.db
+    volumes:
+      - ponyfun-db-data:/app/data
     networks:
       - ponyfun-net
     restart: always
@@ -16,6 +20,10 @@ services:
     depends_on:
       - backend
     restart: always
+
+volumes:
+  ponyfun-db-data:
+
 
 networks:
   ponyfun-net:

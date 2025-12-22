@@ -1,0 +1,8 @@
+node_modules
+ponyfun.db
+ponyfun.db-shm
+ponyfun.db-wal
+*.log
+.git
+.gitignore
+.dockerignore
