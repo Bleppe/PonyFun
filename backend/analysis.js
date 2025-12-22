@@ -8,8 +8,8 @@ const db = require('./db');
  */
 async function calculateHorseAnalysis(poolId) {
     return new Promise((resolve, reject) => {
-        db.get(`SELECT h.id, h.name, h.total_earnings, h.win_count, h.total_starts, h.record_auto, h.record_volt,
-                r.name as rider_name, r.win_rate as rider_win_rate, p.bet_percentage
+        db.get(`SELECT h.id, h.name, h.total_earnings, h.win_count, h.total_starts, h.record_auto, h.record_volt, h.recent_form,
+                r.name as rider_name, r.win_rate as rider_win_rate, p.bet_percentage, p.comment
                 FROM v85_pools p
                 JOIN horses h ON h.id = p.horse_id
                 LEFT JOIN riders r ON r.id = p.rider_id
@@ -47,14 +47,31 @@ async function calculateHorseAnalysis(poolId) {
                 // Convert to percentage and clamp
                 const calculatedProbability = Math.min(Math.max(rawProb * 100, 1), 70);
 
+                // Calculate recent form string from results
+                // Results come in DESC order (most recent first), but we want oldest first
+                let recentFormString = 'N/A';
+                if (results && results.length > 0) {
+                    recentFormString = results.reverse().map(r => {
+                        const pos = r.position;
+                        if (pos === 1) return '1';
+                        if (pos === 2) return '2';
+                        if (pos === 3) return '3';
+                        return '0';
+                    }).join('');
+                }
+
+                // Use calculated form if stored form is N/A, otherwise use stored
+                const finalRecentForm = (horse.recent_form && horse.recent_form !== 'N/A') ? horse.recent_form : recentFormString;
+
                 resolve({
                     horse_id: horse.id,
                     calculated_probability: (calculatedProbability / 100).toFixed(4),
                     rider: horse.rider_name || 'Pro Driver',
-                    recent_form: results && results.length > 0 ? results.map(r => r.position).join('-') : 'N/A',
+                    recent_form: finalRecentForm,
                     record_auto: horse.record_auto,
                     record_volt: horse.record_volt,
-                    total_earnings: horse.total_earnings
+                    total_earnings: horse.total_earnings,
+                    comment: horse.comment
                 });
             });
         });

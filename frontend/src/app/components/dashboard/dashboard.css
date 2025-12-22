@@ -3,28 +3,94 @@
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
-    border-bottom: 2px solid var(--card-bg);
+    border-bottom: 3px solid transparent;
+    border-image: var(--rainbow-gradient) 1;
     padding-bottom: 0.5rem;
     margin-bottom: 1rem;
-    transition: opacity 0.2s;
+    transition: all 0.3s ease;
 }
 
 .venue-header:hover {
-    opacity: 0.8;
+    opacity: 0.9;
+    transform: translateX(5px);
 }
 
 .venue-title {
     font-size: 1.5rem;
     margin: 0;
-    color: var(--text-color);
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(90deg, #d8b4fe, #f9a8d4, #fcd34d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
 .toggle-icon {
     font-size: 0.8rem;
-    color: var(--accent-color);
+    color: var(--sparkle-cyan);
     transition: transform 0.3s ease;
+    filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.5));
 }
 
 .toggle-icon.collapsed {
     transform: rotate(-90deg);
+}
+
+/* Logo styling */
+.dashboard-logo {
+    max-width: 350px;
+    height: auto;
+    filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.6));
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+
+/* Header with logo - Top Frame Layout */
+.dashboard-header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 0.25rem;
+    padding: 0.25rem 2rem 0.5rem 2rem;
+}
+
+.header-controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
+}
+
+.header-controls h1 {
+    margin: 0;
+    font-size: 2rem;
+    background: linear-gradient(90deg, #d8b4fe, #f9a8d4, #fcd34d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+}
+
+.scrape-controls {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
 }

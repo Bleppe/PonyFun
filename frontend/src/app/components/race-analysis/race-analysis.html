@@ -1,13 +1,14 @@
 <div class="analysis-container">
     <header class="analysis-header">
-        <div class="header-top">
+        <div class="venue-badge" *ngIf="track">{{ track }} - {{ date }}</div>
+        <div class="nav-row">
             <a routerLink="/" class="back-link">← Back to Dashboard</a>
-            <div class="venue-badge" *ngIf="track">{{ track }} - {{ date }}</div>
-        </div>
-        <div class="header-nav">
-            <button class="nav-btn" (click)="goToPreviousRace()" [disabled]="raceId === 1">← Prev Race</button>
-            <h1>Race {{ raceId }}</h1>
-            <button class="nav-btn" (click)="goToNextRace()" [disabled]="raceId === 8">Next Race →</button>
+            <div class="header-nav">
+                <button class="nav-btn" (click)="goToPreviousRace()" [disabled]="raceId === 1">← Prev Race</button>
+                <h1>Race {{ raceId }}</h1>
+                <button class="nav-btn" (click)="goToNextRace()" [disabled]="raceId === 8">Next Race →</button>
+            </div>
+            <div class="spacer"></div>
         </div>
     </header>
 
@@ -27,6 +28,7 @@
                 <th>Recent Form</th>
                 <th>Records (A/V)</th>
                 <th>Earnings</th>
+                <th>Comment</th>
             </tr>
         </thead>
         <tbody>
@@ -42,6 +44,10 @@
                 <td><span class="form-badge">{{ horse.recent_form }}</span></td>
                 <td>{{ horse.record_auto }} / {{ horse.record_volt }}</td>
                 <td>{{ (horse.total_earnings / 1000).toFixed(0) }}k kr</td>
+                <td class="comment-cell" [class.has-comment]="horse.comment">
+                    <span *ngIf="horse.comment">📝</span>
+                    <div class="tooltip" *ngIf="horse.comment" [class.tooltip-bottom]="i < 2">{{ horse.comment }}</div>
+                </td>
             </tr>
         </tbody>
     </table>
@@ -49,4 +55,7 @@
     <div *ngIf="!loading && analysis.length === 0" class="empty-state">
         No analysis data found for this race.
     </div>
+
+    <!-- Mascot -->
+    <img src="/mascot_transparent.png" alt="Unicorn Pirate Mascot" class="mascot" />
 </div>

@@ -53,7 +53,8 @@ export class DashboardComponent implements OnInit {
 
   triggerScrape(): void {
     this.loading = true;
-    this.raceService.scrapeData(this.source).subscribe(() => {
+    // Use 'both' to get ATG structure + SH enrichment
+    this.raceService.scrapeData('both').subscribe(() => {
       this.loadRaces();
     });
   }

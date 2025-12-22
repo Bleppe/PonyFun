@@ -38,8 +38,10 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
         const dateMatch = racedayData.date.match(/\/Date\((\d+)\)\//);
         const vDate = dateMatch ? new Date(parseInt(dateMatch[1])).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
-        console.log(`Clearing existing V85 pool data for ${venueName} on ${vDate}...`);
-        await new Promise((resolve) => db.run(`DELETE FROM v85_pools WHERE date = ? AND track = ?`, [vDate, venueName], resolve));
+        // Don't delete existing data - we're enriching ATG data, not replacing it
+        // This allows dual-source scraping where ATG provides structure and SH enriches with details
+        // console.log(`Clearing existing V85 pool data for ${venueName} on ${vDate}...`);
+        // await new Promise((resolve) => db.run(`DELETE FROM v85_pools WHERE date = ? AND track = ?`, [vDate, venueName], resolve));
 
         const sortedRaceIds = Object.keys(v85Races).sort((a, b) => v85Races[a].legNr - v85Races[b].legNr);
         let currentLeg = 1;
@@ -111,24 +113,34 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
                 const winCount = lifeStats.first || 0;
                 const totalStarts = lifeStats.nrOfStarts || 0;
 
+                // Calculate Recent Form
+                let recentForm = 'N/A';
+                if (horseStatsData?.pastPerformances) {
+                    recentForm = horseStatsData.pastPerformances.slice(0, 5).map(p => {
+                        const place = parseInt(p.place);
+                        if (isNaN(place)) return '0';
+                        return place === 1 ? '1' : place === 2 ? '2' : place === 3 ? '3' : '0';
+                    }).join('');
+                }
+
                 // Insert/Update Horse
                 const horseId = await new Promise((resolve) => {
                     db.get(`SELECT id FROM horses WHERE name = ?`, [horseName], (err, row) => {
                         if (row) {
-                            db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ? WHERE id = ?`,
-                                [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, row.id], () => resolve(row.id));
+                            db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, recent_form = ? WHERE id = ?`,
+                                [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, row.id], () => resolve(row.id));
                         } else {
-                            db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                                [horseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts], function () {
+                            db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts, recent_form) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                [horseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
                                     resolve(this.lastID);
                                 });
                         }
                     });
                 });
 
-                // Insert Pool Data
+                // Insert Pool Data (OR IGNORE to avoid duplicates when enriching ATG data)
                 await new Promise((resolve) => {
-                    db.run(`INSERT INTO v85_pools (date, track, race_number, horse_id, rider_id, horse_number, bet_percentage) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    db.run(`INSERT OR IGNORE INTO v85_pools (date, track, race_number, horse_id, rider_id, horse_number, bet_percentage) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                         [vDate, venueName, parseInt(legNr), horseId, riderId, horseNum, betPercentage.toFixed(1)], resolve);
                 });
 
@@ -140,10 +152,17 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
                         const pace = perf.formattedTime;
                         const track = perf.trackCode;
 
+                        // Parse date from SH format /Date(123)/ if needed, or use as is
+                        let date = 'N/A';
+                        if (perf.date) {
+                            const dateMatch = perf.date.match(/\/Date\((\d+)\)\//);
+                            date = dateMatch ? new Date(parseInt(dateMatch[1])).toISOString().split('T')[0] : perf.date;
+                        }
+
                         await new Promise((resolve) => {
-                            db.run(`INSERT INTO race_results (horse_id, rider_id, position, km_pace, distance, track_code) 
-                                    VALUES (?, ?, ?, ?, ?, ?)`,
-                                [horseId, riderId, pos, pace, dist, track], resolve);
+                            db.run(`INSERT INTO race_results (horse_id, rider_id, position, km_pace, distance, track_code, date) 
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                                [horseId, riderId, pos, pace, dist, track, date], resolve);
                         });
                     }
                 }
@@ -190,10 +209,31 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
             console.log(`Processing ATG Race: ${raceId}...`);
 
             const raceUrl = `https://www.atg.se/services/racinginfo/v1/api/races/${raceId}`;
-            const raceResp = await axios.get(raceUrl, axiosConfig);
+            const extendedUrl = `https://www.atg.se/services/racinginfo/v1/api/races/${raceId}/extended`;
+
+            const [raceResp, extendedResp] = await Promise.all([
+                axios.get(raceUrl, axiosConfig),
+                axios.get(extendedUrl, axiosConfig).catch(() => ({ data: {} })) // Fail silently for extended
+            ]);
+
             const raceData = raceResp.data;
+            const extendedData = extendedResp.data;
+
+            const commentsMap = {};
+            if (extendedData && extendedData.starts) {
+                for (const start of extendedData.starts) {
+                    if (start.comments && start.comments.length > 0) {
+                        // Prefer TR Media or take first
+                        const trComment = start.comments.find(c => c.source === 'TR Media');
+                        commentsMap[start.number] = trComment ? trComment.commentText : start.comments[0].commentText;
+                    }
+                }
+            }
 
             for (const start of raceData.starts) {
+                if (!start.horse.logged) {
+                    console.log('ATG Horse Sample:', JSON.stringify(start.horse, null, 2));
+                }
                 const horseName = start.horse.name;
                 const riderName = start.driver ? (start.driver.firstName + ' ' + start.driver.lastName) : 'Unknown';
                 const horseNum = start.number;
@@ -258,15 +298,44 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
                     }
                 }
 
+                // Calculate Recent Form from statistics
+                let recentForm = 'N/A';
+                if (stats.years) {
+                    const currentYear = new Date().getFullYear().toString();
+                    const lastYear = (new Date().getFullYear() - 1).toString();
+                    const yearStats = stats.years[currentYear] || stats.years[lastYear];
+
+                    if (yearStats && yearStats.placement) {
+                        // Build synthetic recent form from placement counts
+                        const placement = yearStats.placement;
+                        const wins = placement['1'] || 0;
+                        const seconds = placement['2'] || 0;
+                        const thirds = placement['3'] || 0;
+
+                        // Create form string: wins as '1', seconds as '2', thirds as '3'
+                        let formArray = [];
+                        for (let i = 0; i < wins; i++) formArray.push('1');
+                        for (let i = 0; i < seconds; i++) formArray.push('2');
+                        for (let i = 0; i < thirds; i++) formArray.push('3');
+
+                        // Pad with 0s if needed to make it 5 characters, or take last 5
+                        if (formArray.length > 0) {
+                            while (formArray.length < 5) formArray.push('0');
+                            recentForm = formArray.slice(0, 5).join('');
+                        }
+                    }
+                }
+
                 // Insert/Update Horse
                 const horseId = await new Promise((resolve) => {
                     db.get(`SELECT id FROM horses WHERE name = ?`, [horseName], (err, row) => {
                         if (row) {
-                            db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ? WHERE id = ?`,
-                                [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, row.id], () => resolve(row.id));
+                            // Update including recent_form
+                            db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, recent_form = ? WHERE id = ?`,
+                                [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, row.id], () => resolve(row.id));
                         } else {
-                            db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                                [horseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts], function () {
+                            db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts, recent_form) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                [horseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
                                     resolve(this.lastID);
                                 });
                         }
@@ -274,9 +343,10 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
                 });
 
                 // Insert Pool Data
+                const comment = commentsMap[horseNum] || null;
                 await new Promise((resolve) => {
-                    db.run(`INSERT INTO v85_pools (date, track, race_number, horse_id, rider_id, horse_number, bet_percentage) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                        [vDate, venueName, legNr, horseId, riderId, horseNum, betPercentage.toFixed(1)], resolve);
+                    db.run(`INSERT INTO v85_pools (date, track, race_number, horse_id, rider_id, horse_number, bet_percentage, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [vDate, venueName, legNr, horseId, riderId, horseNum, betPercentage.toFixed(1), comment], resolve);
                 });
 
                 // Historical Results
@@ -286,11 +356,12 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
                         const dist = perf.distance;
                         const pace = perf.kmTime?.formattedTime || 'N/A';
                         const track = perf.track?.name || 'N/A';
+                        const date = perf.date ? perf.date.split('T')[0] : 'N/A';
 
                         await new Promise((resolve) => {
-                            db.run(`INSERT INTO race_results (horse_id, rider_id, position, km_pace, distance, track_code) 
-                                    VALUES (?, ?, ?, ?, ?, ?)`,
-                                [horseId, riderId, pos, pace, dist, track], resolve);
+                            db.run(`INSERT INTO race_results (horse_id, rider_id, position, km_pace, distance, track_code, date) 
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                                [horseId, riderId, pos, pace, dist, track, date], resolve);
                         });
                     }
                 }

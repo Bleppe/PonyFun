@@ -1,17 +1,18 @@
 <div class="dashboard-container">
   <header class="dashboard-header">
-    <h1>PonyFun V85 Analysis</h1>
-    <div class="scrape-controls">
-      <select [(ngModel)]="source" class="source-select">
-        <option value="atg">ATG.se (Recommended)</option>
-        <option value="sh">Swedish Horse Racing</option>
-      </select>
-      <button class="scrape-btn secondary" (click)="triggerScrapeAll()" [disabled]="loading">
-        {{ loading ? 'Searching...' : 'Find All Future Rounds' }}
-      </button>
-      <button class="scrape-btn" (click)="triggerScrape()" [disabled]="loading">
-        {{ loading ? 'Scraping...' : 'Fetch Latest Data' }}
-      </button>
+    <div class="dashboard-header-content">
+      <img src="/logo_transparent.png" alt="PonyFun Logo" class="dashboard-logo" />
+      <div class="header-controls">
+        <h1>V85 Analysis</h1>
+        <div class="scrape-controls">
+          <button class="scrape-btn secondary" (click)="triggerScrapeAll()" [disabled]="loading">
+            {{ loading ? 'Searching...' : 'Find All Future Rounds' }}
+          </button>
+          <button class="scrape-btn" (click)="triggerScrape()" [disabled]="loading">
+            {{ loading ? 'Scraping...' : 'Fetch Latest Data (ATG + SH)' }}
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -41,4 +42,7 @@
       No data available. Use the button above to scrape V85 data.
     </div>
   </section>
+
+  <!-- Mascot -->
+  <img src="/mascot_transparent.png" alt="Unicorn Pirate Mascot" class="mascot" />
 </div>

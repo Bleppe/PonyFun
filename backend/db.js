@@ -25,7 +25,8 @@ function createTables() {
             record_volt TEXT,
             total_earnings INTEGER,
             win_count INTEGER,
-            total_starts INTEGER
+            total_starts INTEGER,
+            recent_form TEXT
         )`);
 
         // Riders table
@@ -56,10 +57,16 @@ function createTables() {
             km_pace TEXT,
             distance INTEGER,
             track_code TEXT,
+            date TEXT,
             FOREIGN KEY(race_id) REFERENCES races(id),
             FOREIGN KEY(horse_id) REFERENCES horses(id),
             FOREIGN KEY(rider_id) REFERENCES riders(id)
         )`);
+
+        // Migration to add date column if it doesn't exist (for existing databases)
+        db.run(`ALTER TABLE race_results ADD COLUMN date TEXT`, (err) => {
+            // Ignore error if column already exists
+        });
 
         // V85 Pool Data
         db.run(`CREATE TABLE IF NOT EXISTS v85_pools (
@@ -73,9 +80,15 @@ function createTables() {
             bet_percentage REAL,
             probability REAL,
             is_scratched BOOLEAN DEFAULT 0,
+            comment TEXT,
             FOREIGN KEY(horse_id) REFERENCES horses(id),
             FOREIGN KEY(rider_id) REFERENCES riders(id)
         )`);
+
+        // Migration to add comment column if it doesn't exist
+        db.run(`ALTER TABLE v85_pools ADD COLUMN comment TEXT`, (err) => {
+            // Ignore error if column already exists
+        });
     });
 }
 

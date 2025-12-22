@@ -62,6 +62,13 @@ app.post('/api/scrape', async (req, res) => {
             return res.json({ message: 'Scraping all upcoming ATG games successful' });
         }
 
+        if (source === 'both') {
+            // Run both scrapers: ATG first for structure, then SH for enrichment
+            await scrapeV85DataATG(gameId || 'V85_2025-12-25_27_3');
+            await scrapeV85Data(racedayId || '2025-12-25_27');
+            return res.json({ message: 'Scraping from both ATG and Swedish Horse Racing successful' });
+        }
+
         if (source === 'sh' || source === 'swedishhorseracing') {
             await scrapeV85Data(racedayId || '2025-12-25_27');
         } else {
