@@ -33,7 +33,7 @@ app.get('/api/analysis/:id', async (req, res) => {
         const track = req.query.track;
         const date = req.query.date;
 
-        db.all(`SELECT p.id, h.name, p.bet_percentage 
+        db.all(`SELECT p.id, h.name, p.bet_percentage, p.horse_number 
                 FROM v85_pools p 
                 JOIN horses h ON h.id = p.horse_id 
                 WHERE p.race_number = ? AND p.track = ? AND p.date = ?`, [raceId, track, date], async (err, pools) => {
@@ -42,7 +42,7 @@ app.get('/api/analysis/:id', async (req, res) => {
             const results = [];
             for (const pool of pools) {
                 const analysis = await calculateHorseAnalysis(pool.id);
-                results.push({ ...analysis, name: pool.name, bet_percentage: pool.bet_percentage });
+                results.push({ ...analysis, name: pool.name, bet_percentage: pool.bet_percentage, horse_number: pool.horse_number });
             }
             // Sort by calculated win probability descending
             results.sort((a, b) => (b.calculated_probability || 0) - (a.calculated_probability || 0));

@@ -17,3 +17,6 @@ yarn-error.log*
 
 # Database
 backend/ponyfun.db
+backend/ponyfun.db-shm
+backend/ponyfun.db-wal
+backend/database.sqlite

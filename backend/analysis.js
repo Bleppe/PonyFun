@@ -9,7 +9,7 @@ const db = require('./db');
 async function calculateHorseAnalysis(poolId) {
     return new Promise((resolve, reject) => {
         db.get(`SELECT h.id, h.name, h.total_earnings, h.win_count, h.total_starts, h.record_auto, h.record_volt, h.recent_form,
-                r.name as rider_name, r.win_rate as rider_win_rate, p.bet_percentage, p.comment
+                r.name as rider_name, r.win_rate as rider_win_rate, p.bet_percentage, p.horse_number, p.comment
                 FROM v85_pools p
                 JOIN horses h ON h.id = p.horse_id
                 LEFT JOIN riders r ON r.id = p.rider_id
@@ -65,6 +65,7 @@ async function calculateHorseAnalysis(poolId) {
 
                 resolve({
                     horse_id: horse.id,
+                    horse_number: horse.horse_number,
                     calculated_probability: (calculatedProbability / 100).toFixed(4),
                     rider: horse.rider_name || 'Pro Driver',
                     recent_form: finalRecentForm,
