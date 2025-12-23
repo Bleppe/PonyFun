@@ -1,18 +1,18 @@
 const axios = require('axios');
 const db = require('./db');
 
+function normalizeHorseName(name) {
+    if (!name) return '';
+    // Remove country suffixes like (FR), (US), (IT), (NO), (FI), (SE), (DE), (DK)
+    return name.replace(/\s\([A-Z]{2}\)$/i, '').trim().toUpperCase();
+}
+
 async function scrapeV85Data(racedayId = '2025-12-25_27') {
     console.log(`Starting real scrape for raceday: ${racedayId}`);
 
     try {
-        // Establish session by visiting homepage first
-        const homepageResp = await axios.get('https://www.swedishhorseracing.com/', {
-            withCredentials: true
-        });
-        const cookies = homepageResp.headers['set-cookie'];
         const axiosConfig = {
             headers: {
-                'Cookie': cookies ? cookies.join('; ') : '',
                 'X-Requested-With': 'XMLHttpRequest',
                 'Origin': 'https://www.swedishhorseracing.com',
                 'Referer': 'https://www.swedishhorseracing.com/races',
@@ -21,10 +21,19 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
             }
         };
 
-        // Selective clear logic moved inside the race loop or handled per track/date
+        // 1. Establish session baseline
+        console.log('Establishing session...');
+        const homepageResp = await axios.get('https://www.swedishhorseracing.com/', axiosConfig);
+        const cookies = homepageResp.headers['set-cookie'];
+        const sessionConfig = {
+            headers: {
+                ...axiosConfig.headers,
+                'Cookie': cookies ? cookies.join('; ') : ''
+            }
+        };
 
         const racedayUrl = `https://www.swedishhorseracing.com/services/raceday/${racedayId}`;
-        const racedayResp = await axios.get(racedayUrl, axiosConfig);
+        const racedayResp = await axios.get(racedayUrl, sessionConfig);
         const racedayData = racedayResp.data;
 
         if (!racedayData.games || !racedayData.games.V85) {
@@ -35,35 +44,49 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
         const v85Races = racedayData.games.V85.races;
         const sortedRaceIds = Object.keys(v85Races).sort((a, b) => v85Races[a].legNr - v85Races[b].legNr);
         const venueName = racedayData.races[Object.keys(racedayData.races)[0]].trackName;
-        // Parse date from /Date(1766188800000)/
         const dateMatch = racedayData.date.match(/\/Date\((\d+)\)\//);
         const vDate = dateMatch ? new Date(parseInt(dateMatch[1])).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-
-        // Don't delete existing data - we're enriching ATG data, not replacing it
-        // This allows dual-source scraping where ATG provides structure and SH enriches with details
-        // console.log(`Clearing existing V85 pool data for ${venueName} on ${vDate}...`);
-        // await new Promise((resolve) => db.run(`DELETE FROM v85_pools WHERE date = ? AND track = ?`, [vDate, venueName], resolve));
 
         let currentLeg = 1;
         for (const raceId of sortedRaceIds) {
             try {
-                const legNr = currentLeg++; // Force sequential leg numbers (1-8)
+                const legNr = currentLeg++;
+                console.log(`Processing SH Race: ${raceId} (Leg ${legNr})`);
                 const raceUrl = `https://www.swedishhorseracing.com/services/race/${raceId}`;
                 const statsUrl = `https://www.swedishhorseracing.com/services/race/${raceId}/stats`;
 
-                const [raceResp, statsResp] = await Promise.all([
-                    axios.get(raceUrl, axiosConfig),
-                    axios.get(statsUrl, axiosConfig).catch(err => {
-                        console.warn(`Stats not available for race ${raceId}: ${err.message}`);
-                        return { data: { stats: {} } };
-                    })
-                ]);
+                // Use a slightly different config for stats if needed, potentially with a more specific Referer
+                const raceConfig = {
+                    headers: {
+                        ...sessionConfig.headers,
+                        'Referer': `https://www.swedishhorseracing.com/races`
+                    }
+                };
+
+                const raceResp = await axios.get(raceUrl, raceConfig);
+
+                // 2. Fetch stats with retries
+                let statsData = {};
+                let attempts = 0;
+                while (attempts < 3) {
+                    try {
+                        const statsResp = await axios.get(statsUrl, raceConfig);
+                        statsData = statsResp.data.stats;
+                        break;
+                    } catch (err) {
+                        attempts++;
+                        console.warn(`Attempt ${attempts} failed for stats ${raceId}: ${err.message}`);
+                        if (attempts === 3) throw err;
+                        await new Promise(r => setTimeout(r, 2000 * attempts));
+                    }
+                }
 
                 const raceData = raceResp.data;
-                const statsData = statsResp.data.stats;
 
                 for (const start of raceData.startResults) {
-                    const horseName = start.horseName || (start.horse ? start.horse.name : 'Unknown');
+                    const originalHorseName = start.horseName || (start.horse ? start.horse.name : 'Unknown');
+                    const horseNameNormalized = normalizeHorseName(originalHorseName);
+
                     const riderName = start.driverName || (start.driver ? (start.driver.firstName + ' ' + start.driver.lastName) : 'Unknown');
                     const horseNum = start.startNr;
                     const trainerName = start.trainerName || (start.horse && start.horse.trainer ? (start.horse.trainer.firstName + ' ' + start.horse.trainer.lastName) : 'Unknown');
@@ -74,11 +97,8 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
 
                     const age = start.horse?.age || horseStatsData?.age || 0;
                     const gender = start.horse?.sex || horseStatsData?.sex || 'N/A';
-
-                    // Get V85 percentage from stakeDistributions
                     const betPercentage = start.stakeDistributions?.V85 || 0;
 
-                    // Insert Rider
                     const riderId = await new Promise((resolve) => {
                         db.get(`SELECT id FROM riders WHERE name = ?`, [riderName], (err, row) => {
                             if (row) resolve(row.id);
@@ -90,7 +110,6 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
                         });
                     });
 
-                    // Derive records from past performances
                     let recordAuto = 'N/A';
                     let recordVolt = 'N/A';
                     if (horseStatsData?.pastPerformances) {
@@ -109,25 +128,23 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
                     const winCount = lifeStats.first || 0;
                     const totalStarts = lifeStats.nrOfStarts || 0;
 
-                    // Calculate Recent Form
                     let recentForm = 'N/A';
                     if (horseStatsData?.pastPerformances) {
-                        recentForm = horseStatsData.pastPerformances.slice(0, 5).map(p => {
-                            const place = parseInt(p.place);
-                            if (isNaN(place)) return '0';
-                            return place === 1 ? '1' : place === 2 ? '2' : place === 3 ? '3' : '0';
-                        }).join('');
+                        recentForm = horseStatsData.pastPerformances.slice(0, 5).map(p => p.formattedPlace || '0').join('');
                     }
 
-                    // Insert/Update Horse
+                    // Insert/Update Horse with normalization
                     const horseId = await new Promise((resolve) => {
-                        db.get(`SELECT id FROM horses WHERE name = ?`, [horseName], (err, row) => {
+                        db.get(`SELECT id FROM horses WHERE UPPER(name) = ? OR UPPER(name) LIKE ?`, [horseNameNormalized, horseNameNormalized + ' (%)'], (err, row) => {
                             if (row) {
-                                db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, recent_form = ? WHERE id = ?`,
-                                    [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, row.id], () => resolve(row.id));
+                                // Update logic with recent_form protection
+                                db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, 
+                                        recent_form = CASE WHEN ? != 'N/A' THEN ? ELSE recent_form END 
+                                        WHERE id = ?`,
+                                    [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, recentForm, row.id], () => resolve(row.id));
                             } else {
                                 db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts, recent_form) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                                    [horseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
+                                    [originalHorseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
                                         resolve(this.lastID);
                                     });
                             }
@@ -143,7 +160,7 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
                     // Insert Historical Results from Stats
                     if (horseStatsData && horseStatsData.pastPerformances) {
                         for (const perf of horseStatsData.pastPerformances.slice(0, 5)) {
-                            const pos = parseInt(perf.formattedPlace) || 0;
+                            const pos = perf.formattedPlace || 0;
                             const dist = perf.distance;
                             const pace = perf.formattedTime;
                             const track = perf.trackCode;
@@ -166,8 +183,8 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
             } catch (raceError) {
                 console.error(`Error processing race ${raceId}:`, raceError.message);
             }
-            // Small delay between races
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Increased delay between races to avoid bot detection
+            await new Promise(resolve => setTimeout(resolve, 3000));
         }
         console.log('Real data scraping complete.');
     } catch (error) {
@@ -225,7 +242,9 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
             }
 
             for (const start of raceData.starts) {
-                const horseName = start.horse.name;
+                const originalHorseName = start.horse.name;
+                const horseNameNormalized = normalizeHorseName(originalHorseName);
+
                 const riderName = start.driver ? (start.driver.firstName + ' ' + start.driver.lastName) : 'Unknown';
                 const horseNum = start.number;
                 const trainerName = start.trainer ? (start.trainer.firstName + ' ' + start.trainer.lastName) : 'Unknown';
@@ -290,44 +309,27 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
                     }
                 }
 
-                // Calculate Recent Form from statistics
+                // Calculate Recent Form from past performances
                 let recentForm = 'N/A';
-                if (stats.years) {
-                    const currentYear = new Date().getFullYear().toString();
-                    const lastYear = (new Date().getFullYear() - 1).toString();
-                    const yearStats = stats.years[currentYear] || stats.years[lastYear];
-
-                    if (yearStats && yearStats.placement) {
-                        // Build synthetic recent form from placement counts
-                        const placement = yearStats.placement;
-                        const wins = placement['1'] || 0;
-                        const seconds = placement['2'] || 0;
-                        const thirds = placement['3'] || 0;
-
-                        // Create form string: wins as '1', seconds as '2', thirds as '3'
-                        let formArray = [];
-                        for (let i = 0; i < wins; i++) formArray.push('1');
-                        for (let i = 0; i < seconds; i++) formArray.push('2');
-                        for (let i = 0; i < thirds; i++) formArray.push('3');
-
-                        // Pad with 0s if needed to make it 5 characters, or take last 5
-                        if (formArray.length > 0) {
-                            while (formArray.length < 5) formArray.push('0');
-                            recentForm = formArray.slice(0, 5).join('');
-                        }
-                    }
+                if (start.horse.pastPerformances) {
+                    recentForm = start.horse.pastPerformances.slice(0, 5)
+                        .map(p => p.place || '0')
+                        .reverse() // ATG usually provides newest first, reverse to match SH oldest first
+                        .join('');
                 }
 
-                // Insert/Update Horse
+                // Insert/Update Horse with normalization
                 const horseId = await new Promise((resolve) => {
-                    db.get(`SELECT id FROM horses WHERE name = ?`, [horseName], (err, row) => {
+                    db.get(`SELECT id FROM horses WHERE UPPER(name) = ? OR UPPER(name) LIKE ?`, [horseNameNormalized, horseNameNormalized + ' (%)'], (err, row) => {
                         if (row) {
-                            // Update including recent_form
-                            db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, recent_form = ? WHERE id = ?`,
-                                [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, row.id], () => resolve(row.id));
+                            // Update including recent_form with protection
+                            db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, 
+                                    recent_form = CASE WHEN ? != 'N/A' THEN ? ELSE recent_form END 
+                                    WHERE id = ?`,
+                                [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, recentForm, row.id], () => resolve(row.id));
                         } else {
                             db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts, recent_form) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                                [horseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
+                                [originalHorseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
                                     resolve(this.lastID);
                                 });
                         }
@@ -345,7 +347,7 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
                 // Historical Results
                 if (start.horse.pastPerformances) {
                     for (const perf of start.horse.pastPerformances.slice(0, 5)) {
-                        const pos = parseInt(perf.place) || 0;
+                        const pos = perf.place || 0;
                         const dist = perf.distance;
                         const pace = perf.kmTime?.formattedTime || 'N/A';
                         const track = perf.track?.name || 'N/A';
@@ -368,7 +370,7 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
 }
 
 async function scrapeAllUpcomingATG() {
-    console.log('Fetching all upcoming V85 games from ATG...');
+    console.log('Fetching all upcoming V85 games...');
     const axiosConfig = {
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
@@ -378,24 +380,106 @@ async function scrapeAllUpcomingATG() {
     };
 
     try {
-        const productUrl = 'https://www.atg.se/services/racinginfo/v1/api/products/V85';
-        const resp = await axios.get(productUrl, axiosConfig);
-        const upcomingGames = resp.data.upcomingGames || resp.data.upcoming || [];
+        // First, try to get upcoming games from ATG
+        const atgGames = new Set();
+        try {
+            const productUrl = 'https://www.atg.se/services/racinginfo/v1/api/products/V85';
+            const resp = await axios.get(productUrl, axiosConfig);
+            const upcomingGames = resp.data.upcomingGames || resp.data.upcoming || [];
+            console.log(`Found ${upcomingGames.length} upcoming V85 games from ATG.`);
 
-        console.log(`Found ${upcomingGames.length} upcoming V85 games in ATG response.`);
-        if (upcomingGames.length === 0) {
-            console.log('Response keys:', Object.keys(resp.data).join(', '));
+            for (const game of upcomingGames) {
+                atgGames.add(game.id);
+            }
+        } catch (err) {
+            console.warn('Could not fetch ATG upcoming games:', err.message);
         }
 
-        for (const game of upcomingGames) {
-            console.log(`Scheduling scrape for game: ${game.id} (${game.startTime})`);
-            await scrapeV85DataATG(game.id);
-            // Small delay between games
-            await new Promise(resolve => setTimeout(resolve, 2000));
+        // Now check Swedish Horse Racing for V85 racedays (more comprehensive)
+        const shConfig = {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                'Referer': 'https://www.swedishhorseracing.com/races',
+                'Accept': 'application/json'
+            }
+        };
+
+        // Get the next 7 days of potential racedays
+        const today = new Date();
+        const racedaysToCheck = [];
+
+        for (let i = 0; i < 14; i++) {
+            const checkDate = new Date(today);
+            checkDate.setDate(today.getDate() + i);
+            const dateStr = checkDate.toISOString().split('T')[0];
+
+            // Try common track IDs (we'll check if they have V85)
+            // Track IDs can vary, so we'll try to discover them
+            for (let trackId = 1; trackId <= 50; trackId++) {
+                racedaysToCheck.push(`${dateStr}_${trackId}`);
+            }
         }
-        console.log('All upcoming ATG games scraped.');
+
+        console.log(`Checking for V85 racedays in Swedish Horse Racing...`);
+        const v85Racedays = [];
+
+        // Check each potential raceday (with rate limiting)
+        for (const racedayId of racedaysToCheck) {
+            try {
+                const racedayUrl = `https://www.swedishhorseracing.com/services/raceday/${racedayId}`;
+                const racedayResp = await axios.get(racedayUrl, shConfig);
+
+                if (racedayResp.data.games && racedayResp.data.games.V85) {
+                    const trackName = racedayResp.data.races[Object.keys(racedayResp.data.races)[0]]?.trackName || 'Unknown';
+                    const dateMatch = racedayResp.data.date.match(/\/Date\((\d+)\)\//);
+                    const raceDate = dateMatch ? new Date(parseInt(dateMatch[1])).toISOString().split('T')[0] : racedayId.split('_')[0];
+
+                    console.log(`Found V85 raceday: ${racedayId} (${trackName} on ${raceDate})`);
+                    v85Racedays.push({ racedayId, trackName, date: raceDate });
+                }
+            } catch (err) {
+                // Silently skip non-existent racedays
+            }
+
+            // Rate limiting to avoid overwhelming the server
+            if (racedaysToCheck.indexOf(racedayId) % 10 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+
+        console.log(`Found ${v85Racedays.length} V85 racedays from Swedish Horse Racing.`);
+
+        // Now scrape each V85 raceday
+        // Try ATG first (better data), fall back to SH if not available
+        for (const raceday of v85Racedays) {
+            try {
+                // Try to find corresponding ATG game ID
+                let scraped = false;
+                for (const atgGameId of atgGames) {
+                    if (atgGameId.includes(raceday.date.replace(/-/g, '-'))) {
+                        console.log(`Scraping ${raceday.racedayId} via ATG (${atgGameId})...`);
+                        await scrapeV85DataATG(atgGameId);
+                        scraped = true;
+                        break;
+                    }
+                }
+
+                // If not found in ATG, use Swedish Horse Racing scraper
+                if (!scraped) {
+                    console.log(`Scraping ${raceday.racedayId} via Swedish Horse Racing...`);
+                    await scrapeV85Data(raceday.racedayId);
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (err) {
+                console.error(`Error scraping ${raceday.racedayId}:`, err.message);
+            }
+        }
+
+        console.log('All upcoming V85 games scraped.');
     } catch (error) {
-        console.error('Error fetching upcoming ATG games:', error.message);
+        console.error('Error in scrapeAllUpcomingATG:', error.message);
     }
 }
 

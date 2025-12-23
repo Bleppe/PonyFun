@@ -21,7 +21,7 @@ app.get('/api/races', (req, res) => {
     db.all(`SELECT track, race_number, date, COUNT(horse_id) as horse_count 
             FROM v85_pools 
             GROUP BY track, race_number, date
-            ORDER BY date DESC, track, race_number`, (err, rows) => {
+            ORDER BY date ASC, race_number`, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });

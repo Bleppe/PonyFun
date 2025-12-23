@@ -48,7 +48,7 @@ export class DashboardComponent implements OnInit {
   }
 
   getGroupKeys(): string[] {
-    return Object.keys(this.groupedRaces).sort((a, b) => b.localeCompare(a));
+    return Object.keys(this.groupedRaces).sort((a, b) => a.localeCompare(b));
   }
 
   triggerScrape(): void {
