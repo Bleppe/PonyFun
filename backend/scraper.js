@@ -336,9 +336,10 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
 
                 // Insert Pool Data
                 const comment = commentsMap[horseNum] || null;
+                const isScratched = start.scratched ? 1 : 0;
                 await new Promise((resolve) => {
-                    db.run(`INSERT INTO v85_pools (date, track, race_number, horse_id, rider_id, horse_number, bet_percentage, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [vDate, venueName, legNr, horseId, riderId, horseNum, betPercentage.toFixed(1), comment], resolve);
+                    db.run(`INSERT INTO v85_pools (date, track, race_number, horse_id, rider_id, horse_number, bet_percentage, comment, is_scratched) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [vDate, venueName, legNr, horseId, riderId, horseNum, betPercentage.toFixed(1), comment, isScratched], resolve);
                 });
 
                 // Historical Results

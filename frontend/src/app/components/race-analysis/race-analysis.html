@@ -33,7 +33,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr *ngFor="let horse of analysis; let i = index">
+            <tr *ngFor="let horse of analysis; let i = index" [class.scratched]="horse.is_scratched">
                 <td class="rank-cell">{{ i + 1 }}{{ i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th' }}</td>
                 <td class="num-cell">{{ horse.horse_number }}</td>
                 <td>{{ horse.name }}</td>

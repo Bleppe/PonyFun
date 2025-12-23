@@ -171,3 +171,21 @@
     font-weight: 600;
     color: var(--sparkle-cyan);
 }
+
+.scratched {
+    opacity: 0.6;
+    filter: grayscale(1);
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.scratched td {
+    text-decoration: line-through;
+    color: #888 !important;
+}
+
+/* Ensure badges inside scratched rows are also grayed out */
+.scratched .form-badge,
+.scratched .prob-cell {
+    opacity: 0.5;
+    filter: grayscale(1);
+}

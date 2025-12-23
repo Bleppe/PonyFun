@@ -9,7 +9,7 @@ const db = require('./db');
 async function calculateHorseAnalysis(poolId) {
     return new Promise((resolve, reject) => {
         db.get(`SELECT h.id, h.name, h.total_earnings, h.win_count, h.total_starts, h.record_auto, h.record_volt, h.recent_form,
-                r.name as rider_name, r.win_rate as rider_win_rate, p.bet_percentage, p.horse_number, p.comment
+                r.name as rider_name, r.win_rate as rider_win_rate, p.bet_percentage, p.horse_number, p.comment, p.is_scratched
                 FROM v85_pools p
                 JOIN horses h ON h.id = p.horse_id
                 LEFT JOIN riders r ON r.id = p.rider_id
@@ -45,7 +45,12 @@ async function calculateHorseAnalysis(poolId) {
                 const rawProb = (horseWinRate * 0.3) + (riderWinRate * 0.2) + (normalizedForm * 0.4) + (classScore * 0.1);
 
                 // Convert to percentage and clamp
-                const calculatedProbability = Math.min(Math.max(rawProb * 100, 1), 70);
+                let calculatedProbability = Math.min(Math.max(rawProb * 100, 1), 70);
+
+                // If scratched, probability is 0
+                if (horse.is_scratched) {
+                    calculatedProbability = 0;
+                }
 
                 // Calculate recent form string from results
                 // Results come in DESC order (most recent first), but we want oldest first
@@ -72,7 +77,8 @@ async function calculateHorseAnalysis(poolId) {
                     record_auto: horse.record_auto,
                     record_volt: horse.record_volt,
                     total_earnings: horse.total_earnings,
-                    comment: horse.comment
+                    comment: horse.comment,
+                    is_scratched: horse.is_scratched
                 });
             });
         });
