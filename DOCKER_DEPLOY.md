@@ -59,10 +59,19 @@ docker-compose down && docker-compose build --no-cache && docker-compose up -d
 
 After rebuilding, check the version in the bottom left corner of the app at http://your-server:4201
 
-The version should match your current git commit hash. You can verify with:
+The version is read from `frontend/package.json`. You can verify the current version with:
 
 ```bash
-git rev-parse --short HEAD
+grep '"version"' frontend/package.json
+```
+
+To update the version, edit `frontend/package.json` or use npm:
+
+```bash
+cd frontend
+npm version patch  # 1.0.0 -> 1.0.1
+npm version minor  # 1.0.0 -> 1.1.0
+npm version major  # 1.0.0 -> 2.0.0
 ```
 
 ## Why This Happens
@@ -70,7 +79,7 @@ git rev-parse --short HEAD
 Docker caches build layers to speed up builds. When you make code changes:
 - Docker may reuse cached layers if it doesn't detect changes
 - The `COPY . .` step might use a cached layer
-- The `.git` folder changes don't always trigger cache invalidation
+- Version numbers come from `package.json`, not git
 
 ## Updated docker-compose.yml
 

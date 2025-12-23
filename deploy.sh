@@ -9,9 +9,9 @@ echo "🏴‍☠️ PonyFun Deployment Script 🦄"
 echo "=================================="
 echo ""
 
-# Get current git commit
-GIT_HASH=$(git rev-parse --short HEAD)
-echo "📦 Current commit: $GIT_HASH"
+# Get current version from package.json
+VERSION=$(grep -o '"version": "[^"]*"' frontend/package.json | cut -d'"' -f4)
+echo "📦 Current version: v$VERSION"
 echo ""
 
 # Stop existing containers
@@ -43,6 +43,6 @@ echo ""
 echo "🎉 Deployment complete!"
 echo "📍 Frontend: http://localhost:4201"
 echo "📍 Backend:  http://localhost:3005"
-echo "🔖 Version:  v$GIT_HASH"
+echo "🔖 Version:  v$VERSION"
 echo ""
 echo "💡 Check the version in the bottom left corner of the app to verify deployment!"
