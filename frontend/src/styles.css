@@ -375,6 +375,22 @@ tbody tr:hover {
   box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
 }
 
+.scrape-btn.danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.4), rgba(249, 115, 22, 0.4));
+  border: 2px solid rgba(239, 68, 68, 0.6);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.scrape-btn.danger:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.6), rgba(249, 115, 22, 0.6));
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
+  transform: translateY(-3px) scale(1.05);
+}
+
+.scrape-btn.danger::before {
+  content: '⚠️';
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem;

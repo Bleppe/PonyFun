@@ -81,6 +81,38 @@ app.post('/api/scrape', async (req, res) => {
     }
 });
 
+app.post('/api/clean-database', async (req, res) => {
+    try {
+        // Delete data from tables in correct order (respecting foreign keys)
+        await new Promise((resolve, reject) => {
+            db.serialize(() => {
+                db.run('DELETE FROM v85_pools', (err) => {
+                    if (err) return reject(err);
+                });
+                db.run('DELETE FROM race_results', (err) => {
+                    if (err) return reject(err);
+                });
+                db.run('DELETE FROM races', (err) => {
+                    if (err) return reject(err);
+                });
+                db.run('DELETE FROM riders', (err) => {
+                    if (err) return reject(err);
+                });
+                db.run('DELETE FROM horses', (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+        });
+
+        console.log('Database cleaned successfully');
+        res.json({ message: 'Database cleaned successfully' });
+    } catch (err) {
+        console.error('Error cleaning database:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/status', (req, res) => {
     res.json({ status: 'Backend is running' });
 });

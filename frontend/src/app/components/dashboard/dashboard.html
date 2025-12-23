@@ -5,6 +5,9 @@
       <div class="header-controls">
         <h1>V85 Analysis</h1>
         <div class="scrape-controls">
+          <button class="scrape-btn danger" (click)="cleanDatabase()" [disabled]="loading">
+            {{ loading ? 'Cleaning...' : '🗑️ Clean Database' }}
+          </button>
           <button class="scrape-btn secondary" (click)="triggerScrapeAll()" [disabled]="loading">
             {{ loading ? 'Searching...' : 'Find All Future Rounds' }}
           </button>

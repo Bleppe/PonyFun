@@ -77,4 +77,23 @@ export class DashboardComponent implements OnInit {
   isGroupExpanded(key: string): boolean {
     return this.raceService.expandedGroups.has(key);
   }
+
+  cleanDatabase(): void {
+    const confirmed = confirm('⚠️ Are you sure you want to delete all race data?\n\nThis will permanently remove:\n• All races\n• All horses\n• All riders\n• All historical data\n\nThis action cannot be undone!');
+
+    if (confirmed) {
+      this.loading = true;
+      this.raceService.cleanDatabase().subscribe({
+        next: () => {
+          console.log('Database cleaned successfully');
+          this.loadRaces();
+        },
+        error: (err) => {
+          console.error('Error cleaning database', err);
+          alert('Error cleaning database: ' + err.message);
+          this.loading = false;
+        }
+      });
+    }
+  }
 }

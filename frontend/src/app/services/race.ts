@@ -26,4 +26,8 @@ export class RaceService {
   scrapeAll(): Observable<any> {
     return this.http.post(`${this.apiUrl}/scrape`, { all: true });
   }
+
+  cleanDatabase(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/clean-database`, {});
+  }
 }
