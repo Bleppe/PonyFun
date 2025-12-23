@@ -1,7 +1,6 @@
 node_modules
 dist
 .angular
-.git
 .gitignore
 .dockerignore
 npm-debug.log

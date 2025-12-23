@@ -1,6 +1,10 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      pull: true
+      no_cache: false
+    image: ponyfun-backend:latest
     ports:
       - "3005:3005"
     environment:
@@ -12,7 +16,11 @@ services:
     restart: always
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      pull: true
+      no_cache: false
+    image: ponyfun-frontend:latest
     ports:
       - "4201:80"
     networks:
