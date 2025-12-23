@@ -7,6 +7,49 @@ function normalizeHorseName(name) {
     return name.replace(/\s\([A-Z]{2}\)$/i, '').trim().toUpperCase();
 }
 
+// Helper function to find the correct Swedish Horse Racing raceday ID for a given date and track
+async function findSHRacedayId(date, trackName) {
+    const axiosConfig = {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Origin': 'https://www.swedishhorseracing.com',
+            'Referer': 'https://www.swedishhorseracing.com/races',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*'
+        }
+    };
+
+    // Try different track IDs (Swedish Horse Racing uses different IDs for different tracks)
+    // Common range is 1-50, but we'll focus on likely ones
+    const trackIdsToTry = [
+        5, 15, 27, 32, 1, 2, 3, 4, 6, 7, 8, 9, 10, // Most common
+        11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 33, 34, 35
+    ];
+
+    for (const trackId of trackIdsToTry) {
+        try {
+            const racedayId = `${date}_${trackId}`;
+            const racedayUrl = `https://www.swedishhorseracing.com/services/raceday/${racedayId}`;
+            const racedayResp = await axios.get(racedayUrl, axiosConfig);
+
+            if (racedayResp.data.games && racedayResp.data.games.V85) {
+                const foundTrackName = racedayResp.data.races[Object.keys(racedayResp.data.races)[0]]?.trackName;
+
+                // Check if this is the track we're looking for
+                if (foundTrackName && foundTrackName.toLowerCase().includes(trackName.toLowerCase())) {
+                    console.log(`✅ Found Swedish Horse Racing raceday ID for ${trackName}: ${racedayId}`);
+                    return racedayId;
+                }
+            }
+        } catch (err) {
+            // Silently continue to next ID
+        }
+    }
+
+    console.warn(`⚠️  Could not find Swedish Horse Racing raceday ID for ${trackName} on ${date}`);
+    return null;
+}
+
 async function scrapeV85Data(racedayId = '2025-12-25_27') {
     console.log(`Starting real scrape for raceday: ${racedayId}`);
 
@@ -137,11 +180,11 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
                     const horseId = await new Promise((resolve) => {
                         db.get(`SELECT id FROM horses WHERE UPPER(name) = ? OR UPPER(name) LIKE ?`, [horseNameNormalized, horseNameNormalized + ' (%)'], (err, row) => {
                             if (row) {
-                                // Update logic with recent_form protection
+                                // Update logic - always update recent_form to show current state
                                 db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, 
-                                        recent_form = CASE WHEN ? != 'N/A' THEN ? ELSE recent_form END 
+                                        recent_form = ? 
                                         WHERE id = ?`,
-                                    [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, recentForm, row.id], () => resolve(row.id));
+                                    [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, row.id], () => resolve(row.id));
                             } else {
                                 db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts, recent_form) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                                     [originalHorseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
@@ -322,11 +365,11 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
                 const horseId = await new Promise((resolve) => {
                     db.get(`SELECT id FROM horses WHERE UPPER(name) = ? OR UPPER(name) LIKE ?`, [horseNameNormalized, horseNameNormalized + ' (%)'], (err, row) => {
                         if (row) {
-                            // Update including recent_form with protection
+                            // Update logic - always update recent_form to show current state
                             db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, 
-                                    recent_form = CASE WHEN ? != 'N/A' THEN ? ELSE recent_form END 
+                                    recent_form = ? 
                                     WHERE id = ?`,
-                                [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, recentForm, row.id], () => resolve(row.id));
+                                [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, row.id], () => resolve(row.id));
                         } else {
                             db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts, recent_form) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                                 [originalHorseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
@@ -364,6 +407,16 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
         console.log('ATG data scraping complete.');
+
+        // Automatically enrich with Swedish Horse Racing data for recent_form
+        console.log(`\n🔄 Enriching ${venueName} data with Swedish Horse Racing...`);
+        const shRacedayId = await findSHRacedayId(vDate, venueName);
+        if (shRacedayId) {
+            await scrapeV85Data(shRacedayId);
+            console.log(`✅ Enrichment complete for ${venueName}`);
+        } else {
+            console.log(`⚠️  Skipping enrichment - could not find Swedish Horse Racing data for ${venueName}`);
+        }
     } catch (error) {
         console.error('Error during ATG scraping:', error.message);
     }
