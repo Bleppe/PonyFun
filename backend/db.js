@@ -89,6 +89,30 @@ function createTables() {
         db.run(`ALTER TABLE v85_pools ADD COLUMN comment TEXT`, (err) => {
             // Ignore error if column already exists
         });
+
+        // Add unique constraint to prevent duplicate entries
+        db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_v85_pools_unique 
+                ON v85_pools(date, track, race_number, horse_number)`, (err) => {
+            if (err) {
+                console.log('Unique index already exists or error creating it:', err.message);
+            } else {
+                console.log('✅ Unique constraint added to v85_pools table');
+            }
+        });
+
+        // Remove any existing duplicates (keep the most recent entry)
+        db.run(`DELETE FROM v85_pools 
+                WHERE id NOT IN (
+                    SELECT MAX(id) 
+                    FROM v85_pools 
+                    GROUP BY date, track, race_number, horse_number
+                )`, (err) => {
+            if (err) {
+                console.error('Error removing duplicates:', err.message);
+            } else {
+                console.log('✅ Removed any duplicate entries from v85_pools');
+            }
+        });
     });
 }
 
