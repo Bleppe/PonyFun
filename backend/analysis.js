@@ -56,13 +56,7 @@ async function calculateHorseAnalysis(poolId) {
                 // Results come in DESC order (most recent first), but we want oldest first
                 let recentFormString = 'N/A';
                 if (results && results.length > 0) {
-                    recentFormString = results.reverse().map(r => {
-                        const pos = r.position;
-                        if (pos === 1) return '1';
-                        if (pos === 2) return '2';
-                        if (pos === 3) return '3';
-                        return '0';
-                    }).join('');
+                    recentFormString = results.reverse().map(r => r.position ? r.position.toString() : '0').join('');
                 }
 
                 // Use calculated form if stored form is N/A, otherwise use stored
