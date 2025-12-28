@@ -511,7 +511,15 @@ async function scrapeAllUpcomingATG() {
 
         // Now scrape each V85 raceday
         // Try ATG first (better data), fall back to SH if not available
+        const todayStr = new Date().toISOString().split('T')[0];
+
         for (const raceday of v85Racedays) {
+            // Skip past races
+            if (raceday.date < todayStr) {
+                console.log(`⏭️  Skipping past race: ${raceday.racedayId} (${raceday.date})`);
+                continue;
+            }
+
             try {
                 // Try to find corresponding ATG game ID
                 let scraped = false;
