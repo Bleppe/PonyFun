@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class RaceService {
-  private apiUrl = 'http://localhost:3005/api';
+  private apiUrl = '/api';
   public expandedGroups: Set<string> = new Set();
 
   constructor(private http: HttpClient) { }
