@@ -16,6 +16,7 @@ export class RaceAnalysisComponent implements OnInit {
   track: string | null = null;
   date: string | null = null;
   loading = false;
+  activeTooltip: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -69,6 +70,11 @@ export class RaceAnalysisComponent implements OnInit {
     if (this.raceId && this.raceId < 8) {
       this.navigateToRace(this.raceId + 1);
     }
+  }
+
+  toggleTooltip(event: Event, index: number): void {
+    event.stopPropagation();
+    this.activeTooltip = this.activeTooltip === index ? null : index;
   }
 
   private navigateToRace(newId: number): void {

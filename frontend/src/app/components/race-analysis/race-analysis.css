@@ -94,9 +94,14 @@
 
 .comment-cell {
     text-align: center;
-    cursor: help;
+    cursor: pointer;
     font-size: 1.2rem;
     position: relative;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .comment-cell .tooltip {
@@ -117,13 +122,15 @@
     min-width: 200px;
     z-index: 1000;
     box-shadow: 0 8px 30px rgba(168, 85, 247, 0.6);
-    pointer-events: none;
+    pointer-events: auto;
     line-height: 1.4;
     text-align: left;
     font-family: 'Quicksand', sans-serif;
 }
 
-.comment-cell:hover .tooltip {
+/* Show tooltip on hover (desktop) or when active (mobile) */
+.comment-cell:hover .tooltip,
+.comment-cell .tooltip.show {
     display: block;
     animation: tooltipFadeIn 0.3s ease;
 }
@@ -164,6 +171,50 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Table wrapper for horizontal scrolling */
+.table-wrapper {
+    position: relative;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1.5rem;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.scroll-hint {
+    display: none;
+    text-align: center;
+    padding: 0.5rem;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.3));
+    color: var(--unicorn-white);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 1.5rem 1.5rem 0 0;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.7;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.horse-name {
+    font-weight: 600;
+    min-width: 120px;
+}
+
+/* Hide columns on mobile */
+.hide-mobile {
+    display: table-cell;
 }
 
 .num-cell {
@@ -255,30 +306,66 @@
         padding: 0.4rem 0.8rem;
     }
 
-    /* Make table scrollable horizontally */
-    .analysis-table {
-        font-size: 0.75rem;
+    /* Show scroll hint on mobile */
+    .scroll-hint {
+        display: block;
     }
 
-    /* Adjust tooltip for mobile */
+    /* Hide less important columns on mobile */
+    .hide-mobile {
+        display: none !important;
+    }
+
+    /* Make table more compact */
+    .analysis-table {
+        font-size: 0.8rem;
+    }
+
+    th,
+    td {
+        padding: 0.6rem 0.4rem;
+    }
+
+    th {
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+
+    .horse-name {
+        min-width: 100px;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .rank-cell {
+        font-size: 0.9rem;
+        min-width: 50px;
+    }
+
+    .num-cell {
+        min-width: 40px;
+    }
+
+    .prob-cell {
+        min-width: 60px;
+    }
+
+    .form-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+    }
+
+    /* Adjust tooltip for mobile - always centered and below */
     .comment-cell .tooltip {
-        max-width: 250px;
-        min-width: 180px;
+        max-width: 280px;
+        min-width: 200px;
         font-size: 0.8rem;
         padding: 10px 12px;
         right: auto;
         left: 50%;
         transform: translateX(-50%);
-    }
-
-    .comment-cell .tooltip::before {
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-    }
-
-    /* Always show tooltips below on mobile */
-    .comment-cell .tooltip {
         bottom: auto;
         top: 100%;
         margin-top: 8px;
@@ -286,10 +373,28 @@
     }
 
     .comment-cell .tooltip::before {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
         top: auto;
         bottom: 100%;
         border-top-color: transparent;
         border-bottom-color: rgba(168, 85, 247, 0.5);
+    }
+
+    /* Override tooltip-bottom class on mobile */
+    .comment-cell .tooltip.tooltip-bottom {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .comment-cell .tooltip.tooltip-bottom::before {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .comment-cell {
+        font-size: 1rem;
     }
 }
 
@@ -308,9 +413,24 @@
         font-size: 0.8rem;
     }
 
-    .comment-cell .tooltip {
-        max-width: 200px;
-        min-width: 150px;
+    .analysis-table {
         font-size: 0.75rem;
+    }
+
+    th,
+    td {
+        padding: 0.5rem 0.3rem;
+    }
+
+    .horse-name {
+        min-width: 80px;
+        max-width: 120px;
+    }
+
+    .comment-cell .tooltip {
+        max-width: 220px;
+        min-width: 180px;
+        font-size: 0.75rem;
+        padding: 8px 10px;
     }
 }
