@@ -514,3 +514,185 @@ tbody tr:hover {
   box-shadow: 0 4px 20px rgba(168, 85, 247, 0.5);
   transform: translateY(-2px);
 }
+
+/* ========================================
+   RESPONSIVE DESIGN - MOBILE & TABLET
+   ======================================== */
+
+/* Tablet (Portrait) - iPad */
+@media (max-width: 1024px) {
+
+  .dashboard-container,
+  .analysis-container {
+    padding: 1.5rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+
+  .mascot {
+    width: 120px;
+    bottom: 15px;
+    right: 15px;
+  }
+}
+
+/* Mobile (Landscape & Portrait) - Phones */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  .dashboard-container,
+  .analysis-container {
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  h2 {
+    font-size: 1.3rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+  }
+
+  /* Single column layout for race cards */
+  .cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  /* Full-width buttons on mobile */
+  .scrape-btn {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+    min-height: 44px;
+    /* Touch target size */
+  }
+
+  .scrape-controls {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  /* Reduce table padding on mobile */
+  th,
+  td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.8rem;
+  }
+
+  th {
+    font-size: 0.7rem;
+  }
+
+  /* Make table horizontally scrollable */
+  .analysis-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  .analysis-table thead,
+  .analysis-table tbody,
+  .analysis-table tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .analysis-table thead {
+    width: calc(100% - 1rem);
+  }
+
+  /* Adjust mascot for mobile */
+  .mascot {
+    width: 80px;
+    bottom: 10px;
+    right: 10px;
+  }
+
+  /* Adjust version display for mobile */
+  .version-display {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.8rem;
+    bottom: 10px;
+    left: 10px;
+  }
+
+  /* Smaller race cards on mobile */
+  .race-card {
+    padding: 1rem;
+  }
+
+  /* Adjust form badges */
+  .form-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  /* Touch-friendly links */
+  .analyze-link,
+  .back-link {
+    display: inline-block;
+    padding: 0.5rem;
+    min-height: 44px;
+    line-height: 34px;
+  }
+
+  /* Reduce empty state padding */
+  .empty-state {
+    padding: 2rem 1rem;
+    font-size: 1rem;
+  }
+
+  /* Adjust spinner size */
+  .spinner {
+    width: 50px;
+    height: 50px;
+  }
+
+  .spinner-container {
+    padding: 2rem;
+  }
+}
+
+/* Small phones - iPhone SE, etc */
+@media (max-width: 375px) {
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  .scrape-btn {
+    font-size: 0.85rem;
+    padding: 0.75rem 0.875rem;
+  }
+
+  th,
+  td {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.75rem;
+  }
+
+  .mascot {
+    width: 60px;
+  }
+
+  .version-display {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+  }
+}
