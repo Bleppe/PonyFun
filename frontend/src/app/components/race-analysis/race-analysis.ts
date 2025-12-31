@@ -22,7 +22,14 @@ export class RaceAnalysisComponent implements OnInit {
     private route: ActivatedRoute,
     private raceService: RaceService,
     private router: Router
-  ) { }
+  ) {
+    // Close tooltip when clicking anywhere on the document
+    if (typeof document !== 'undefined') {
+      document.addEventListener('click', () => {
+        this.activeTooltip = null;
+      });
+    }
+  }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {

@@ -51,7 +51,7 @@
                     <td class="comment-cell" [class.has-comment]="horse.comment" (click)="toggleTooltip($event, i)">
                         <span *ngIf="horse.comment">📝</span>
                         <div class="tooltip" *ngIf="horse.comment" [class.show]="activeTooltip === i"
-                            [class.tooltip-bottom]="i < 2">
+                            [class.tooltip-bottom]="i < 2" (click)="$event.stopPropagation()">
                             {{ horse.comment }}
                         </div>
                     </td>
