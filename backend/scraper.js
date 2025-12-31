@@ -429,7 +429,7 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
 }
 
 async function scrapeAllUpcomingATG() {
-    console.log('Fetching all upcoming V85 games...');
+    console.log('🔍 Fetching all upcoming V85 games from ATG...');
     const axiosConfig = {
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
@@ -439,114 +439,56 @@ async function scrapeAllUpcomingATG() {
     };
 
     try {
-        // First, try to get upcoming games from ATG
-        const atgGames = new Set();
-        try {
-            const productUrl = 'https://www.atg.se/services/racinginfo/v1/api/products/V85';
-            const resp = await axios.get(productUrl, axiosConfig);
-            const upcomingGames = resp.data.upcomingGames || resp.data.upcoming || [];
-            console.log(`Found ${upcomingGames.length} upcoming V85 games from ATG.`);
+        // Get all upcoming V85 games from ATG in a single API call
+        const productUrl = 'https://www.atg.se/services/racinginfo/v1/api/products/V85';
+        const resp = await axios.get(productUrl, axiosConfig);
+        const upcomingGames = resp.data.upcomingGames || resp.data.upcoming || [];
 
-            for (const game of upcomingGames) {
-                atgGames.add(game.id);
-            }
-        } catch (err) {
-            console.warn('Could not fetch ATG upcoming games:', err.message);
+        if (upcomingGames.length === 0) {
+            console.log('⚠️  No upcoming V85 games found.');
+            return;
         }
 
-        // Now check Swedish Horse Racing for V85 racedays (more comprehensive)
-        const shConfig = {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                'Referer': 'https://www.swedishhorseracing.com/races',
-                'Accept': 'application/json'
-            }
-        };
+        console.log(`✅ Found ${upcomingGames.length} upcoming V85 games from ATG`);
 
-        // Get the next 7 days of potential racedays
+        // Filter out past games (only future races)
         const today = new Date();
-        const racedaysToCheck = [];
+        today.setHours(0, 0, 0, 0);
 
-        for (let i = 0; i < 14; i++) {
-            const checkDate = new Date(today);
-            checkDate.setDate(today.getDate() + i);
-            const dateStr = checkDate.toISOString().split('T')[0];
-
-            // Try common track IDs (we'll check if they have V85)
-            // Track IDs can vary, so we'll try to discover them
-            for (let trackId = 1; trackId <= 50; trackId++) {
-                racedaysToCheck.push(`${dateStr}_${trackId}`);
+        const futureGames = upcomingGames.filter(game => {
+            // Extract date from game ID (format: V85_2025-12-31_27_3)
+            const dateMatch = game.id.match(/V85_(\d{4}-\d{2}-\d{2})/);
+            if (dateMatch) {
+                const gameDate = new Date(dateMatch[1]);
+                return gameDate >= today;
             }
-        }
+            return true; // Include if we can't parse the date
+        });
 
-        console.log(`Checking for V85 racedays in Swedish Horse Racing...`);
-        const v85Racedays = [];
+        console.log(`📅 ${futureGames.length} games are in the future`);
 
-        // Check each potential raceday (with rate limiting)
-        for (const racedayId of racedaysToCheck) {
+        // Scrape each upcoming game
+        for (let i = 0; i < futureGames.length; i++) {
+            const game = futureGames[i];
             try {
-                const racedayUrl = `https://www.swedishhorseracing.com/services/raceday/${racedayId}`;
-                const racedayResp = await axios.get(racedayUrl, shConfig);
+                console.log(`\n[${i + 1}/${futureGames.length}] Scraping ${game.id}...`);
+                await scrapeV85DataATG(game.id);
 
-                if (racedayResp.data.games && racedayResp.data.games.V85) {
-                    const trackName = racedayResp.data.races[Object.keys(racedayResp.data.races)[0]]?.trackName || 'Unknown';
-                    const dateMatch = racedayResp.data.date.match(/\/Date\((\d+)\)\//);
-                    const raceDate = dateMatch ? new Date(parseInt(dateMatch[1])).toISOString().split('T')[0] : racedayId.split('_')[0];
-
-                    console.log(`Found V85 raceday: ${racedayId} (${trackName} on ${raceDate})`);
-                    v85Racedays.push({ racedayId, trackName, date: raceDate });
+                // Rate limiting between games
+                if (i < futureGames.length - 1) {
+                    console.log('⏳ Waiting 2 seconds before next game...');
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                 }
             } catch (err) {
-                // Silently skip non-existent racedays
-            }
-
-            // Rate limiting to avoid overwhelming the server
-            if (racedaysToCheck.indexOf(racedayId) % 10 === 0) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+                console.error(`❌ Error scraping ${game.id}:`, err.message);
+                // Continue with next game even if one fails
             }
         }
 
-        console.log(`Found ${v85Racedays.length} V85 racedays from Swedish Horse Racing.`);
-
-        // Now scrape each V85 raceday
-        // Try ATG first (better data), fall back to SH if not available
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        for (const raceday of v85Racedays) {
-            // Skip past races
-            if (raceday.date < todayStr) {
-                console.log(`⏭️  Skipping past race: ${raceday.racedayId} (${raceday.date})`);
-                continue;
-            }
-
-            try {
-                // Try to find corresponding ATG game ID
-                let scraped = false;
-                for (const atgGameId of atgGames) {
-                    if (atgGameId.includes(raceday.date.replace(/-/g, '-'))) {
-                        console.log(`Scraping ${raceday.racedayId} via ATG (${atgGameId})...`);
-                        await scrapeV85DataATG(atgGameId);
-                        scraped = true;
-                        break;
-                    }
-                }
-
-                // If not found in ATG, use Swedish Horse Racing scraper
-                if (!scraped) {
-                    console.log(`Scraping ${raceday.racedayId} via Swedish Horse Racing...`);
-                    await scrapeV85Data(raceday.racedayId);
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            } catch (err) {
-                console.error(`Error scraping ${raceday.racedayId}:`, err.message);
-            }
-        }
-
-        console.log('All upcoming V85 games scraped.');
+        console.log('\n✅ All upcoming V85 games scraped successfully!');
     } catch (error) {
-        console.error('Error in scrapeAllUpcomingATG:', error.message);
+        console.error('❌ Error in scrapeAllUpcomingATG:', error.message);
+        throw error;
     }
 }
 

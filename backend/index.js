@@ -10,6 +10,27 @@ const port = process.env.PORT || 3005;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Performance monitoring middleware
+app.use((req, res, next) => {
+    const start = Date.now();
+
+    // Capture the original end function
+    const originalEnd = res.end;
+
+    // Override the end function
+    res.end = function (...args) {
+        const duration = Date.now() - start;
+        const logColor = duration > 1000 ? '\x1b[31m' : duration > 500 ? '\x1b[33m' : '\x1b[32m';
+        const reset = '\x1b[0m';
+        console.log(`${logColor}[${duration}ms]${reset} ${req.method} ${req.path}`);
+
+        // Call the original end function
+        originalEnd.apply(res, args);
+    };
+
+    next();
+});
+
 const db = require('./db');
 
 // Table creation is now handled in db.js
