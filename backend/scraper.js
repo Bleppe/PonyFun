@@ -414,7 +414,9 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
         }
         console.log('ATG data scraping complete.');
 
-        // Automatically enrich with Swedish Horse Racing data for recent_form
+        // COMMENTED OUT FOR TESTING - Swedish Horse Racing enrichment adds 30-40 seconds
+        // ATG already provides all needed data including pastPerformances for recent_form
+        /*
         console.log(`\n🔄 Enriching ${venueName} data with Swedish Horse Racing...`);
         const shRacedayId = await findSHRacedayId(vDate, venueName);
         if (shRacedayId) {
@@ -423,6 +425,8 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
         } else {
             console.log(`⚠️  Skipping enrichment - could not find Swedish Horse Racing data for ${venueName}`);
         }
+        */
+        console.log(`✅ Scraping complete for ${venueName} (ATG only - no SH enrichment)`);
     } catch (error) {
         console.error('Error during ATG scraping:', error.message);
     }
