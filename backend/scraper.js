@@ -227,7 +227,11 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
                         db.get(`SELECT id, name FROM horses WHERE 
                                 UPPER(name) = ? OR 
                                 UPPER(name) LIKE ? OR
-                                REPLACE(REPLACE(REPLACE(UPPER(name), '.', ''), '-', ''), ' ', '') = ?`,
+                                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+                                    UPPER(name), 
+                                    'Å', 'A'), 'Ä', 'A'), 'Ö', 'O'), 
+                                    'å', 'a'), 'ä', 'a'), 'ö', 'o'),
+                                    '.', ''), '-', ''), ' ', '') = ?`,
                             [horseNameNormalized, horseNameNormalized + ' (%)', normalizedForMatch],
                             (err, row) => {
                                 if (row) {
