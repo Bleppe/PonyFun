@@ -216,6 +216,13 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
                     const horseId = await new Promise((resolve) => {
                         const normalizedForMatch = normalizeForMatching(originalHorseName);
 
+                        // Debug logging for problematic names
+                        if (originalHorseName.includes('ä') || originalHorseName.includes('ö') || originalHorseName.includes('å') || originalHorseName.includes('.')) {
+                            console.log(`  🔍 Matching "${originalHorseName}":`);
+                            console.log(`     - Normalized: "${horseNameNormalized}"`);
+                            console.log(`     - For matching: "${normalizedForMatch}"`);
+                        }
+
                         // Try multiple matching strategies
                         db.get(`SELECT id, name FROM horses WHERE 
                                 UPPER(name) = ? OR 
