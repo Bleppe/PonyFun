@@ -326,37 +326,26 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
             console.log(`Processing ATG Race: ${raceId}...`);
 
             const raceUrl = `https://www.atg.se/services/racinginfo/v1/api/races/${raceId}`;
-            const extendedUrl = `https://www.atg.se/services/racinginfo/v1/api/races/${raceId}/extended`;
+            const tipsCommentsUrl = `https://www.atg.se/services/racinginfo/v1/api/races/${raceId}/tips-comments`;
 
-            const [raceResp, extendedResp] = await Promise.all([
+            const [raceResp, tipsResp] = await Promise.all([
                 axios.get(raceUrl, axiosConfig),
-                axios.get(extendedUrl, axiosConfig).catch(() => ({ data: {} })) // Fail silently for extended
+                axios.get(tipsCommentsUrl, axiosConfig).catch(() => ({ data: {} })) // Fail silently for tips-comments
             ]);
 
             const raceData = raceResp.data;
-            const extendedData = extendedResp.data;
+            const tipsData = tipsResp.data;
 
             const commentsMap = {};
-            if (extendedData && extendedData.starts) {
-                let commentCount = 0;
-                for (const start of extendedData.starts) {
-                    if (start.comments && start.comments.length > 0) {
-                        // Prefer TR Media or take first
-                        const trComment = start.comments.find(c => c.source === 'TR Media');
-                        commentsMap[start.number] = trComment ? trComment.commentText : start.comments[0].commentText;
-                        console.log(`  💬 Comment for horse #${start.number}: "${commentsMap[start.number].substring(0, 50)}..."`);
-                        commentCount++;
-                    }
+            if (tipsData && tipsData.comments && tipsData.comments.length > 0) {
+                for (const comment of tipsData.comments) {
+                    commentsMap[comment.startNumber] = comment.text;
+                    console.log(`  💬 Comment for horse #${comment.startNumber}: "${comment.text.substring(0, 50)}..."`);
                 }
-                if (commentCount > 0) {
-                    console.log(`  ✅ Found ${commentCount} comments from ATG extended data`);
-                } else {
-                    console.log(`  ⚠️  Extended data available but NO comments found (race may be too old or comments not yet published)`);
-                }
+                console.log(`  ✅ Found ${tipsData.comments.length} comments from ATG tips-comments`);
             } else {
-                console.log(`  ❌ No extended data available - comments will be missing`);
+                console.log(`  ⚠️  No comments available from tips-comments endpoint`);
             }
-
 
 
             for (const start of raceData.starts) {
