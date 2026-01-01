@@ -230,7 +230,7 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
                                 REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
                                     UPPER(name), 
                                     'Å', 'A'), 'Ä', 'A'), 'Ö', 'O'), 
-                                    'å', 'a'), 'ä', 'a'), 'ö', 'o'),
+                                    'å', 'A'), 'ä', 'A'), 'ö', 'O'),
                                     '.', ''), '-', ''), ' ', '') = ?`,
                             [horseNameNormalized, horseNameNormalized + ' (%)', normalizedForMatch],
                             (err, row) => {
