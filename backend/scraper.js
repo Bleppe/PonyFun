@@ -7,7 +7,7 @@ function normalizeHorseName(name) {
     return name.replace(/\s\([A-Z]{2}\)$/i, '').trim().toUpperCase();
 }
 
-// Helper function to find the correct Swedish Horse Racing raceday ID for a given date and track
+// Helper function to find the correct Swedish Horse Racing raceday ID using the calendar API
 async function findSHRacedayId(date, trackName) {
     const axiosConfig = {
         headers: {
@@ -19,35 +19,46 @@ async function findSHRacedayId(date, trackName) {
         }
     };
 
-    // Try different track IDs (Swedish Horse Racing uses different IDs for different tracks)
-    // Common range is 1-50, but we'll focus on likely ones
-    const trackIdsToTry = [
-        5, 15, 27, 32, 1, 2, 3, 4, 6, 7, 8, 9, 10, // Most common
-        11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 33, 34, 35
-    ];
+    try {
+        // Use the calendar API to get all race days for the date
+        const calendarUrl = `https://www.swedishhorseracing.com/services/calendar/?current=${date}&timeZoneOffset=0`;
+        const calendarResp = await axios.get(calendarUrl, axiosConfig);
 
-    for (const trackId of trackIdsToTry) {
-        try {
-            const racedayId = `${date}_${trackId}`;
-            const racedayUrl = `https://www.swedishhorseracing.com/services/raceday/${racedayId}`;
-            const racedayResp = await axios.get(racedayUrl, axiosConfig);
+        if (!calendarResp.data || !calendarResp.data.days) {
+            console.warn(`⚠️  Calendar API returned no data for ${date}`);
+            return null;
+        }
 
-            if (racedayResp.data.games && racedayResp.data.games.V85) {
-                const foundTrackName = racedayResp.data.races[Object.keys(racedayResp.data.races)[0]]?.trackName;
+        // Find the day matching our date
+        for (const day of calendarResp.data.days) {
+            // Parse the date from /Date(timestamp)/ format
+            const dateMatch = day.date.match(/\/Date\((\d+)\)\//);
+            if (!dateMatch) continue;
 
-                // Check if this is the track we're looking for
-                if (foundTrackName && foundTrackName.toLowerCase().includes(trackName.toLowerCase())) {
-                    console.log(`✅ Found Swedish Horse Racing raceday ID for ${trackName}: ${racedayId}`);
-                    return racedayId;
+            const dayDate = new Date(parseInt(dateMatch[1])).toISOString().split('T')[0];
+
+            if (dayDate === date) {
+                // Look through all race days for this date
+                for (const raceDay of day.raceDayTrackInfoViews || []) {
+                    // Check if track name matches and it's a V85 race
+                    if (raceDay.trackName &&
+                        raceDay.trackName.toLowerCase().includes(trackName.toLowerCase()) &&
+                        raceDay.betType === 'V85') {
+
+                        const racedayId = raceDay.refRaceDayId;
+                        console.log(`✅ Found Swedish Horse Racing raceday ID via calendar API: ${racedayId} (${raceDay.trackName})`);
+                        return racedayId;
+                    }
                 }
             }
-        } catch (err) {
-            // Silently continue to next ID
         }
-    }
 
-    console.warn(`⚠️  Could not find Swedish Horse Racing raceday ID for ${trackName} on ${date}`);
-    return null;
+        console.warn(`⚠️  Could not find V85 race for ${trackName} on ${date} in calendar`);
+        return null;
+    } catch (err) {
+        console.error(`❌ Error fetching calendar API:`, err.message);
+        return null;
+    }
 }
 
 async function scrapeV85Data(racedayId = '2025-12-25_27') {
@@ -358,14 +369,19 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
                     }
                 }
 
+
                 // Calculate Recent Form from past performances
                 let recentForm = 'N/A';
-                if (start.horse.pastPerformances) {
+                if (start.horse.pastPerformances && start.horse.pastPerformances.length > 0) {
                     recentForm = start.horse.pastPerformances.slice(0, 5)
                         .map(p => p.place || '0')
                         .reverse() // ATG usually provides newest first, reverse to match SH oldest first
                         .join('');
+                    console.log(`  ${originalHorseName}: recent_form = ${recentForm} (from ${start.horse.pastPerformances.length} past performances)`);
+                } else {
+                    console.log(`  ${originalHorseName}: No pastPerformances data from ATG`);
                 }
+
 
                 // Insert/Update Horse with normalization
                 const horseId = await new Promise((resolve) => {
@@ -414,9 +430,7 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
         }
         console.log('ATG data scraping complete.');
 
-        // COMMENTED OUT FOR TESTING - Swedish Horse Racing enrichment adds 30-40 seconds
-        // ATG already provides all needed data including pastPerformances for recent_form
-        /*
+        // Enrich with Swedish Horse Racing data for recent_form (now using fast calendar API)
         console.log(`\n🔄 Enriching ${venueName} data with Swedish Horse Racing...`);
         const shRacedayId = await findSHRacedayId(vDate, venueName);
         if (shRacedayId) {
@@ -425,8 +439,6 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
         } else {
             console.log(`⚠️  Skipping enrichment - could not find Swedish Horse Racing data for ${venueName}`);
         }
-        */
-        console.log(`✅ Scraping complete for ${venueName} (ATG only - no SH enrichment)`);
     } catch (error) {
         console.error('Error during ATG scraping:', error.message);
     }
