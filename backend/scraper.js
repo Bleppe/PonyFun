@@ -23,6 +23,9 @@ function normalizeForMatching(name) {
 
     return name
         .replace(/\s\([A-Z]{2}\)$/i, '')  // Remove country codes
+        .replace(/å/gi, 'a')  // Swedish å → a
+        .replace(/ä/gi, 'a')  // Swedish ä → a
+        .replace(/ö/gi, 'o')  // Swedish ö → o
         .replace(/[.\-']/g, '')  // Remove dots, dashes, apostrophes
         .replace(/\s+/g, '')  // Remove all spaces
         .toUpperCase()
