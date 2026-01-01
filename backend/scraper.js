@@ -329,9 +329,14 @@ async function scrapeV85DataATG(gameId = 'V85_2025-12-25_27_3') {
                         // Prefer TR Media or take first
                         const trComment = start.comments.find(c => c.source === 'TR Media');
                         commentsMap[start.number] = trComment ? trComment.commentText : start.comments[0].commentText;
+                        console.log(`  💬 Comment for horse #${start.number}: "${commentsMap[start.number].substring(0, 50)}..."`);
                     }
                 }
+                console.log(`  Found ${Object.keys(commentsMap).length} comments from ATG extended data`);
+            } else {
+                console.log(`  ⚠️  No extended data available - comments will be missing`);
             }
+
 
             for (const start of raceData.starts) {
                 const originalHorseName = start.horse.name;
