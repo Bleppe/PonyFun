@@ -3,8 +3,30 @@ const db = require('./db');
 
 function normalizeHorseName(name) {
     if (!name) return '';
+
     // Remove country suffixes like (FR), (US), (IT), (NO), (FI), (SE), (DE), (DK)
-    return name.replace(/\s\([A-Z]{2}\)$/i, '').trim().toUpperCase();
+    let normalized = name.replace(/\s\([A-Z]{2}\)$/i, '').trim();
+
+    // Normalize Swedish characters for better matching
+    // Keep original characters but also create a searchable version
+    normalized = normalized
+        .replace(/\s+/g, ' ')  // Normalize whitespace
+        .trim()
+        .toUpperCase();
+
+    return normalized;
+}
+
+// Helper function to create a more aggressive normalized version for matching
+function normalizeForMatching(name) {
+    if (!name) return '';
+
+    return name
+        .replace(/\s\([A-Z]{2}\)$/i, '')  // Remove country codes
+        .replace(/[.\-']/g, '')  // Remove dots, dashes, apostrophes
+        .replace(/\s+/g, '')  // Remove all spaces
+        .toUpperCase()
+        .trim();
 }
 
 // Helper function to find the correct Swedish Horse Racing raceday ID using the calendar API
@@ -189,20 +211,30 @@ async function scrapeV85Data(racedayId = '2025-12-25_27') {
 
                     // Insert/Update Horse with normalization
                     const horseId = await new Promise((resolve) => {
-                        db.get(`SELECT id FROM horses WHERE UPPER(name) = ? OR UPPER(name) LIKE ?`, [horseNameNormalized, horseNameNormalized + ' (%)'], (err, row) => {
-                            if (row) {
-                                // Update logic - always update recent_form to show current state
-                                db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, 
+                        const normalizedForMatch = normalizeForMatching(originalHorseName);
+
+                        // Try multiple matching strategies
+                        db.get(`SELECT id, name FROM horses WHERE 
+                                UPPER(name) = ? OR 
+                                UPPER(name) LIKE ? OR
+                                REPLACE(REPLACE(REPLACE(UPPER(name), '.', ''), '-', ''), ' ', '') = ?`,
+                            [horseNameNormalized, horseNameNormalized + ' (%)', normalizedForMatch],
+                            (err, row) => {
+                                if (row) {
+                                    console.log(`  ✓ Matched SH horse "${originalHorseName}" to existing horse #${row.id} "${row.name}"`);
+                                    // Update logic - always update recent_form to show current state
+                                    db.run(`UPDATE horses SET age = ?, gender = ?, trainer = ?, record_auto = ?, record_volt = ?, total_earnings = ?, win_count = ?, total_starts = ?, 
                                         recent_form = ? 
                                         WHERE id = ?`,
-                                    [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, row.id], () => resolve(row.id));
-                            } else {
-                                db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts, recent_form) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                                    [originalHorseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
-                                        resolve(this.lastID);
-                                    });
-                            }
-                        });
+                                        [age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm, row.id], () => resolve(row.id));
+                                } else {
+                                    console.log(`  ⚠️  No match found for SH horse "${originalHorseName}", creating new entry`);
+                                    db.run(`INSERT INTO horses (name, age, gender, trainer, record_auto, record_volt, total_earnings, win_count, total_starts, recent_form) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                        [originalHorseName, age, gender, trainerName, recordAuto, recordVolt, totalEarnings, winCount, totalStarts, recentForm], function () {
+                                            resolve(this.lastID);
+                                        });
+                                }
+                            });
                     });
 
                     // Insert Pool Data - preserve comment and is_scratched from ATG
