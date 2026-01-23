@@ -16,11 +16,51 @@ export class DashboardComponent implements OnInit {
   upcomingRaces: any[] = [];
   loading = false;
   source: string = 'atg';
+  selections: any[] = [];
 
   constructor(private raceService: RaceService) { }
 
   ngOnInit(): void {
     this.loadRaces();
+    this.loadSelections();
+  }
+
+  loadSelections(): void {
+    this.raceService.getSelections().subscribe({
+      next: (data) => {
+        this.selections = data;
+      },
+      error: (err) => console.error('Error loading selections', err)
+    });
+  }
+
+  getSelectedHorses(track: string, date: string, raceNumber: number): number[] {
+    return this.selections
+      .filter(s => s.track === track && s.date === date && s.race_number === raceNumber)
+      .map(s => s.horse_number)
+      .sort((a, b) => a - b);
+  }
+
+  calculateSystemCost(key: string): number {
+    const races = this.groupedRaces[key];
+    if (!races || races.length === 0) return 0;
+
+    let combinations = 1;
+    // Optimize: Pre-calculate or map to keys to avoid repeated filtering if perf issues arise.
+    // For now, simple iteration is fine.
+
+    for (const race of races) {
+      const count = this.getSelectedHorses(race.track, race.date, race.race_number).length;
+      if (count === 0) {
+        // If any leg has 0 selections, the system is invalid (cannot be submitted), so cost is technically 0.
+        // Or should we assume 1 for missing legs to show potential cost? 
+        // Standard betting system calculators return 0 if the system is incomplete.
+        return 0;
+      }
+      combinations *= count;
+    }
+
+    return combinations * 0.5;
   }
 
   loadRaces(): void {
@@ -30,6 +70,8 @@ export class DashboardComponent implements OnInit {
         this.upcomingRaces = data;
         this.groupRaces(data);
         this.loading = false;
+        // Refresh selections when races load effectively? 
+        // No, independent. But good to refresh if new races appear?
       },
       error: (err) => {
         console.error('Error fetching races', err);

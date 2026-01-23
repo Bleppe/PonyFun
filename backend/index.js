@@ -75,6 +75,70 @@ app.get('/api/analysis/:id', async (req, res) => {
     }
 });
 
+// Get selections for a specific race or all selections
+app.get('/api/selections', (req, res) => {
+    const { track, date, race_number } = req.query;
+    let query = 'SELECT * FROM selected_horses';
+    let params = [];
+
+    if (track && date) {
+        query += ' WHERE track = ? AND date = ?';
+        params.push(track, date);
+        if (race_number) {
+            query += ' AND race_number = ?';
+            params.push(race_number);
+        }
+    }
+
+    db.all(query, params, (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+// Add or remove a selection (toggle)
+// Body: { track, date, race_number, horse_number, selected }
+// If selected is true, add. If false, remove.
+app.post('/api/selections', (req, res) => {
+    const { track, date, race_number, horse_number, selected } = req.body;
+
+    if (!track || !date || !race_number || !horse_number) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (selected) {
+        db.run(`INSERT OR REPLACE INTO selected_horses (track, date, race_number, horse_number) 
+                VALUES (?, ?, ?, ?)`,
+            [track, date, race_number, horse_number], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ message: 'Selection saved', selected: true });
+            });
+    } else {
+        db.run(`DELETE FROM selected_horses 
+                WHERE track = ? AND date = ? AND race_number = ? AND horse_number = ?`,
+            [track, date, race_number, horse_number], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ message: 'Selection removed', selected: false });
+            });
+    }
+});
+
+// Clear all selections for a specific race
+app.delete('/api/selections', (req, res) => {
+    const { track, date, race_number } = req.query;
+
+    if (!track || !date || !race_number) {
+        return res.status(400).json({ error: 'Missing required query parameters' });
+    }
+
+    db.run(`DELETE FROM selected_horses 
+            WHERE track = ? AND date = ? AND race_number = ?`,
+        [track, date, race_number], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Selections cleared for this race' });
+        });
+});
+
 app.post('/api/scrape', async (req, res) => {
     try {
         const { source, gameId, racedayId, all } = req.body;

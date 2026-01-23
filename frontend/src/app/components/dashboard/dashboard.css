@@ -10,6 +10,23 @@
     transition: all 0.3s ease;
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.system-cost {
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--sparkle-cyan);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.1);
+}
+
 .venue-header:hover {
     opacity: 0.9;
     transform: translateX(5px);
@@ -166,4 +183,39 @@
     .venue-title {
         font-size: 1.1rem;
     }
+}
+
+/* Selected Horses Badges */
+.selected-horses {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.selection-label {
+    font-size: 0.85rem;
+    color: var(--sparkle-cyan);
+    margin-right: 8px;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.badges-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.selection-badge {
+    background: linear-gradient(135deg, var(--magic-purple), var(--dream-pink));
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }

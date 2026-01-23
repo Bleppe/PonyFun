@@ -113,6 +113,16 @@ function createTables() {
                 console.log('✅ Removed any duplicate entries from v85_pools');
             }
         });
+        // Selected Horses (for betting/tracking)
+        db.run(`CREATE TABLE IF NOT EXISTS selected_horses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            track TEXT,
+            date TEXT,
+            race_number INTEGER,
+            horse_number INTEGER,
+            UNIQUE(track, date, race_number, horse_number) ON CONFLICT REPLACE
+        )`);
+
     });
 }
 

@@ -19,6 +19,30 @@ export class RaceService {
     return this.http.get<any>(`${this.apiUrl}/analysis/${raceId}?track=${track}&date=${date}`);
   }
 
+  getSelections(track?: string, date?: string, raceNumber?: number): Observable<any[]> {
+    let url = `${this.apiUrl}/selections`;
+    const params = [];
+    if (track && date) {
+      params.push(`track=${track}`);
+      params.push(`date=${date}`);
+    }
+    if (raceNumber) {
+      params.push(`race_number=${raceNumber}`);
+    }
+    if (params.length > 0) {
+      url += `?${params.join('&')}`;
+    }
+    return this.http.get<any[]>(url);
+  }
+
+  saveSelection(selection: { track: string, date: string, race_number: number, horse_number: number, selected: boolean }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/selections`, selection);
+  }
+
+  clearSelections(track: string, date: string, raceNumber: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/selections?track=${track}&date=${date}&race_number=${raceNumber}`);
+  }
+
   scrapeData(source: string = 'atg', gameId?: string, racedayId?: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/scrape`, { source, gameId, racedayId });
   }

@@ -26,13 +26,27 @@
     <div *ngIf="!loading">
       <div class="venue-section" *ngFor="let key of getGroupKeys()">
         <div class="venue-header" (click)="toggleGroup(key)">
-          <h2 class="venue-title">{{ key }}</h2>
+          <div class="header-left">
+            <h2 class="venue-title">{{ key }}</h2>
+            <span class="system-cost" *ngIf="calculateSystemCost(key) > 0">
+              System Cost: {{ calculateSystemCost(key) | number:'1.2-2' }} SEK
+            </span>
+          </div>
           <span class="toggle-icon" [class.collapsed]="!isGroupExpanded(key)">▼</span>
         </div>
         <div class="cards-grid" *ngIf="isGroupExpanded(key)">
           <div class="race-card" *ngFor="let race of groupedRaces[key]">
             <h3>Race {{ race.race_number }}</h3>
             <p>Horses: {{ race.horse_count }}</p>
+
+            <div class="selected-horses" *ngIf="getSelectedHorses(race.track, race.date, race.race_number).length > 0">
+              <span class="selection-label">Bets:</span>
+              <div class="badges-row">
+                <span class="selection-badge"
+                  *ngFor="let num of getSelectedHorses(race.track, race.date, race.race_number)">{{ num }}</span>
+              </div>
+            </div>
+
             <a [routerLink]="['/analysis', race.race_number]" [queryParams]="{ track: race.track, date: race.date }"
               class="analyze-link">View Analysis</a>
           </div>
