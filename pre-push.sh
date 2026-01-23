@@ -13,7 +13,7 @@ CURRENT_VERSION=$(grep -o '"version": "[^"]*"' package.json | cut -d'"' -f4)
 echo "📦 Current version: $CURRENT_VERSION"
 
 # Bump patch version using npm
-npm version patch --no-git-tag-version > /dev/null 2>&1
+npm version patch --no-git-tag-version
 
 # Get new version
 NEW_VERSION=$(grep -o '"version": "[^"]*"' package.json | cut -d'"' -f4)
