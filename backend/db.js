@@ -33,8 +33,30 @@ function createTables() {
         db.run(`CREATE TABLE IF NOT EXISTS riders (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE,
-            win_rate REAL DEFAULT 0
-        )`);
+            win_rate REAL,
+            ranking INTEGER,
+            starts INTEGER DEFAULT 0,
+            first_places INTEGER DEFAULT 0,
+            second_places INTEGER DEFAULT 0,
+            third_places INTEGER DEFAULT 0,
+            fourth_places INTEGER DEFAULT 0,
+            fifth_places INTEGER DEFAULT 0
+        )`, (err) => {
+            if (err) console.error('Error creating riders table:', err.message);
+            else {
+                // Ensure columns exist for older databases
+                const columns = [
+                    'ranking', // Keep ranking migration for older databases
+                    'starts', 'first_places', 'second_places',
+                    'third_places', 'fourth_places', 'fifth_places'
+                ];
+                columns.forEach(col => {
+                    db.run(`ALTER TABLE riders ADD COLUMN ${col} INTEGER DEFAULT 0`, (err) => {
+                        // Ignore "duplicate column name" error
+                    });
+                });
+            }
+        });
 
         // Races table
         db.run(`CREATE TABLE IF NOT EXISTS races (

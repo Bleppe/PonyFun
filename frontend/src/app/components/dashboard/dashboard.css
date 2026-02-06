@@ -219,3 +219,40 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
+.race-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    width: 100%;
+}
+
+.analyze-btn {
+    flex: 1;
+    text-align: center;
+    background: linear-gradient(135deg, var(--magic-purple), var(--dream-pink));
+    color: white !important;
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+}
+
+.analyze-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
+
+.rider-view-btn {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+.rider-view-btn:hover {
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+}

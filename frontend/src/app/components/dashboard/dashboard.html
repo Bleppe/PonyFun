@@ -13,6 +13,7 @@
           <button class="scrape-btn" (click)="triggerScrape()" [disabled]="loading">
             {{ loading ? 'Scraping...' : 'Fetch Latest Data (ATG + SH)' }}
           </button>
+          <a routerLink="/riders" class="scrape-btn info">🏆 Top Riders Analysis</a>
         </div>
       </div>
     </div>
@@ -46,9 +47,16 @@
                   *ngFor="let num of getSelectedHorses(race.track, race.date, race.race_number)">{{ num }}</span>
               </div>
             </div>
-
-            <a [routerLink]="['/analysis', race.race_number]" [queryParams]="{ track: race.track, date: race.date }"
-              class="analyze-link">View Analysis</a>
+            <div class="race-actions">
+              <a [routerLink]="['/analysis', race.race_number]" [queryParams]="{track: race.track, date: race.date}"
+                class="analyze-btn">
+                Analyze Race
+              </a>
+              <a [routerLink]="['/rider-analysis', race.race_number]"
+                [queryParams]="{track: race.track, date: race.date}" class="analyze-btn rider-view-btn">
+                🏇 Rider View
+              </a>
+            </div>
           </div>
         </div>
       </div>

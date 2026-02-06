@@ -54,4 +54,12 @@ export class RaceService {
   cleanDatabase(): Observable<any> {
     return this.http.post(`${this.apiUrl}/clean-database`, {});
   }
+
+  getTopRiders(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/top-riders`);
+  }
+
+  fetchToplists(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/fetch-toplists`, {});
+  }
 }

@@ -1,0 +1,40 @@
+@import '../race-analysis/race-analysis.css';
+
+.rider-name-cell {
+    font-weight: 700;
+    color: var(--unicorn-white);
+}
+
+.win-highlight {
+    color: var(--treasure-gold);
+    font-weight: 700;
+}
+
+.select-cell {
+    width: 60px;
+    text-align: center;
+}
+
+.horse-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--magic-purple);
+}
+
+.selected-row {
+    background: rgba(168, 85, 247, 0.1) !important;
+}
+
+.no-rank {
+    opacity: 0.4;
+    font-style: italic;
+}
+
+.analysis-table td {
+    padding: 1.2rem 1rem;
+}
+
+.rider-rank {
+    display: inline-flex;
+}

@@ -1,14 +1,18 @@
 <div class="analysis-container">
     <header class="analysis-header">
-        <div class="venue-badge" *ngIf="track">{{ track }} - {{ date }}</div>
+        <div class="venue-badge" *ngIf="track && date">{{ track }} • {{ date }}</div>
         <div class="nav-row">
-            <a routerLink="/" class="back-link">← Back to Dashboard</a>
+            <a routerLink="/" class="back-link">← Dashboard</a>
             <div class="header-nav">
                 <button class="nav-btn" (click)="goToPreviousRace()" [disabled]="raceId === 1">← Prev Race</button>
                 <h1>Race {{ raceId }}</h1>
                 <button class="nav-btn" (click)="goToNextRace()" [disabled]="raceId === 8">Next Race →</button>
             </div>
             <div class="selection-controls">
+                <button class="toggle-view-btn highlight" (click)="switchToRiderView()">
+                    🏇 Rider View
+                </button>
+                <div class="button-divider"></div>
                 <button class="save-btn" (click)="saveSelections()" [disabled]="saving">
                     {{ saving ? 'Saving...' : '💾 Save' }}
                 </button>
@@ -52,7 +56,10 @@
                     <td class="rank-cell">{{ i + 1 }}{{ i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th' }}</td>
                     <td class="num-cell">{{ horse.horse_number }}</td>
                     <td class="horse-name">{{ horse.name }}</td>
-                    <td class="hide-mobile">{{ horse.rider }}</td>
+                    <td class="hide-mobile">
+                        {{ horse.rider }}
+                        <span class="rider-rank" *ngIf="horse.rider_ranking">#{{ horse.rider_ranking }}</span>
+                    </td>
                     <td class="prob-cell">{{ (horse.calculated_probability * 100).toFixed(1) }}%</td>
                     <td class="hide-mobile">{{ horse.bet_percentage }}%</td>
                     <td [class.positive-edge]="horse.calculated_probability * 100 > horse.bet_percentage">

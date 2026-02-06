@@ -1,0 +1,83 @@
+<div class="analysis-container">
+    <header class="analysis-header">
+        <div class="venue-badge" *ngIf="track && date">{{ track }} • {{ date }}</div>
+        <div class="nav-row">
+            <a routerLink="/" class="back-link">← Dashboard</a>
+            <div class="header-nav">
+                <button class="nav-btn" (click)="goToPreviousRace()" [disabled]="raceId === 1">← Prev Race</button>
+                <h1>Race {{ raceId }}</h1>
+                <button class="nav-btn" (click)="goToNextRace()" [disabled]="raceId === 8">Next Race →</button>
+            </div>
+            <div class="selection-controls">
+                <button class="toggle-view-btn" (click)="switchToAnalysis()">
+                    📊 Analysis View
+                </button>
+                <div class="button-divider"></div>
+                <button class="save-btn" (click)="saveSelections()" [disabled]="saving">
+                    {{ saving ? 'Saving...' : '💾 Save' }}
+                </button>
+                <button class="deselect-btn" (click)="deselectAll()" [disabled]="selectedHorses.size === 0">
+                    ❌ Deselect All
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div *ngIf="loading" class="spinner-container">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="table-wrapper" *ngIf="!loading && analysis.length > 0">
+        <div class="scroll-hint">← Scroll to see more →</div>
+        <table class="analysis-table">
+            <thead>
+                <tr>
+                    <th class="select-cell">Select</th>
+                    <th class="num-cell">#</th>
+                    <th>Rider</th>
+                    <th>Rank</th>
+                    <th class="stat-cell">Starts</th>
+                    <th class="stat-cell">1:a</th>
+                    <th class="stat-cell">2:a</th>
+                    <th class="stat-cell">3:a</th>
+                    <th class="stat-cell">4:a</th>
+                    <th class="stat-cell">5:a</th>
+                    <th class="stat-cell">Win %</th>
+                    <th>Horse</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let horse of analysis" [class.scratched]="horse.is_scratched"
+                    [class.selected-row]="selectedHorses.has(horse.horse_number)">
+                    <td class="select-cell">
+                        <input type="checkbox" [checked]="selectedHorses.has(horse.horse_number)"
+                            (change)="toggleSelection(horse.horse_number)" class="horse-checkbox">
+                    </td>
+                    <td class="num-cell">{{ horse.horse_number }}</td>
+                    <td class="rider-name-cell">
+                        {{ horse.rider }}
+                    </td>
+                    <td>
+                        <span class="rider-rank" *ngIf="horse.rider_ranking">#{{ horse.rider_ranking }}</span>
+                        <span class="no-rank" *ngIf="!horse.rider_ranking">-</span>
+                    </td>
+                    <td class="stat-cell">{{ horse.rider_starts || '-' }}</td>
+                    <td class="stat-cell">{{ horse.rider_first_places || '-' }}</td>
+                    <td class="stat-cell">{{ horse.rider_second_places || '-' }}</td>
+                    <td class="stat-cell">{{ horse.rider_third_places || '-' }}</td>
+                    <td class="stat-cell">{{ horse.rider_fourth_places || '-' }}</td>
+                    <td class="stat-cell">{{ horse.rider_fifth_places || '-' }}</td>
+                    <td class="prob-cell win-highlight">
+                        {{ horse.rider_win_rate ? (horse.rider_win_rate * 100).toFixed(1) + '%' : '-' }}
+                    </td>
+                    <td class="horse-name">
+                        {{ horse.name }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mascot -->
+    <img src="/mascot_transparent.png" alt="Unicorn Pirate Mascot" class="mascot" />
+</div>

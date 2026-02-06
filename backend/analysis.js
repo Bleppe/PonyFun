@@ -9,7 +9,9 @@ const db = require('./db');
 async function calculateHorseAnalysis(poolId) {
     return new Promise((resolve, reject) => {
         db.get(`SELECT h.id, h.name, h.total_earnings, h.win_count, h.total_starts, h.record_auto, h.record_volt, h.recent_form,
-                r.name as rider_name, r.win_rate as rider_win_rate, p.bet_percentage, p.horse_number, p.comment, p.is_scratched
+                r.name as rider_name, r.win_rate as rider_win_rate, r.ranking as rider_ranking,
+                r.starts, r.first_places, r.second_places, r.third_places, r.fourth_places, r.fifth_places,
+                p.bet_percentage, p.horse_number, p.comment, p.is_scratched
                 FROM v85_pools p
                 JOIN horses h ON h.id = p.horse_id
                 LEFT JOIN riders r ON r.id = p.rider_id
@@ -71,6 +73,14 @@ async function calculateHorseAnalysis(poolId) {
                     record_auto: horse.record_auto,
                     record_volt: horse.record_volt,
                     total_earnings: horse.total_earnings,
+                    rider_ranking: horse.rider_ranking,
+                    rider_win_rate: horse.rider_win_rate,
+                    rider_starts: horse.starts,
+                    rider_first_places: horse.first_places,
+                    rider_second_places: horse.second_places,
+                    rider_third_places: horse.third_places,
+                    rider_fourth_places: horse.fourth_places,
+                    rider_fifth_places: horse.fifth_places,
                     comment: horse.comment,
                     is_scratched: horse.is_scratched
                 });

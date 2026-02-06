@@ -37,6 +37,7 @@ const db = require('./db');
 
 const { scrapeV85Data, scrapeV85DataATG, scrapeAllUpcomingATG } = require('./scraper');
 const { calculateHorseAnalysis } = require('./analysis');
+const { fetchTopRiders } = require('./fetch_toplists');
 
 app.get('/api/races', (req, res) => {
     db.all(`SELECT track, race_number, date, COUNT(horse_id) as horse_count 
@@ -195,6 +196,22 @@ app.post('/api/clean-database', async (req, res) => {
         res.json({ message: 'Database cleaned successfully' });
     } catch (err) {
         console.error('Error cleaning database:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/top-riders', (req, res) => {
+    db.all(`SELECT name, win_rate, ranking, starts, first_places, second_places, third_places, fourth_places, fifth_places FROM riders WHERE ranking IS NOT NULL ORDER BY ranking ASC LIMIT 2000`, (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+app.post('/api/fetch-toplists', async (req, res) => {
+    try {
+        const result = await fetchTopRiders();
+        res.json(result);
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

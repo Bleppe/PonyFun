@@ -1,0 +1,58 @@
+<div class="analysis-container">
+    <header class="analysis-header">
+        <div class="nav-row">
+            <a routerLink="/" class="back-link">← Dashboard</a>
+            <h1>🏆 Top Riders Analysis 2026</h1>
+            <div class="selection-controls">
+                <button class="save-btn info" (click)="refreshTopRiders()" [disabled]="loading">
+                    {{ loading ? 'Updating...' : '🔄 Refresh Rankings' }}
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div *ngIf="loading" class="spinner-container">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="table-wrapper" *ngIf="!loading && topRiders.length > 0">
+        <div class="scroll-hint">← Scroll to see more →</div>
+        <table class="analysis-table">
+            <thead>
+                <tr>
+                    <th class="rank-cell">Rank</th>
+                    <th>Name</th>
+                    <th class="stat-cell">Starter</th>
+                    <th class="stat-cell">1:a</th>
+                    <th class="stat-cell">2:a</th>
+                    <th class="stat-cell">3:a</th>
+                    <th class="stat-cell">4:a</th>
+                    <th class="stat-cell">5:a</th>
+                    <th class="stat-cell">Seger %</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let rider of topRiders">
+                    <td class="rank-cell">#{{ rider.ranking }}</td>
+                    <td class="name-cell">{{ rider.name }}</td>
+                    <td class="stat-cell">{{ rider.starts }}</td>
+                    <td class="stat-cell">{{ rider.first_places }}</td>
+                    <td class="stat-cell">{{ rider.second_places }}</td>
+                    <td class="stat-cell">{{ rider.third_places }}</td>
+                    <td class="stat-cell">{{ rider.fourth_places }}</td>
+                    <td class="stat-cell">{{ rider.fifth_places }}</td>
+                    <td class="stat-cell win-highlight">
+                        {{ (rider.win_rate * 100).toFixed(1) }}%
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div *ngIf="!loading && topRiders.length === 0" class="empty-state">
+        No rider rankings found. Use the refresh button to fetch data from Travsport.
+    </div>
+
+    <!-- Mascot -->
+    <img src="/mascot_transparent.png" alt="Unicorn Pirate Mascot" class="mascot" />
+</div>

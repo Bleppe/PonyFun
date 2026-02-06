@@ -1,0 +1,49 @@
+/* Reuse styles from race-analysis.css for consistency */
+@import '../race-analysis/race-analysis.css';
+
+.rider-rank {
+    display: inline-flex;
+}
+
+.stat-cell {
+    text-align: center !important;
+    font-family: 'Inter', monospace;
+    font-size: 0.9rem;
+}
+
+.win-highlight {
+    color: var(--treasure-gold);
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+.analysis-table th.stat-cell {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.rider-rank-big {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #1a1a2e;
+    font-weight: 800;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);
+}
+
+.save-btn.info {
+    background: linear-gradient(135deg, #409cff, #2563eb);
+}
+
+.save-btn.info:hover {
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+}
+
+.analysis-table td {
+    vertical-align: middle;
+}

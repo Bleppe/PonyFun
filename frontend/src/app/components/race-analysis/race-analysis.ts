@@ -215,6 +215,12 @@ export class RaceAnalysisComponent implements OnInit {
     }
   }
 
+  switchToRiderView(): void {
+    this.router.navigate(['/rider-analysis', this.raceId], {
+      queryParams: { track: this.track, date: this.date }
+    });
+  }
+
   private navigateToRace(newId: number): void {
     this.router.navigate(['/analysis', newId], {
       queryParams: { track: this.track, date: this.date }
