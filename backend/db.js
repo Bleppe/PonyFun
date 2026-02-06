@@ -46,7 +46,6 @@ function createTables() {
             else {
                 // Ensure columns exist for older databases
                 const columns = [
-                    'ranking', // Keep ranking migration for older databases
                     'starts', 'first_places', 'second_places',
                     'third_places', 'fourth_places', 'fifth_places'
                 ];
@@ -54,6 +53,10 @@ function createTables() {
                     db.run(`ALTER TABLE riders ADD COLUMN ${col} INTEGER DEFAULT 0`, (err) => {
                         // Ignore "duplicate column name" error
                     });
+                });
+                // Ranking should be NULL by default, not 0
+                db.run(`ALTER TABLE riders ADD COLUMN ranking INTEGER`, (err) => {
+                    // Ignore "duplicate column name" error
                 });
             }
         });

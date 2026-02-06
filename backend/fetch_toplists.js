@@ -3,6 +3,15 @@ const db = require('./db');
 
 async function fetchTopRiders() {
     console.log('Fetching top riders from Travsport...');
+
+    // Reset all rankings first to ensure only current top riders have rankings
+    await new Promise((resolve) => {
+        db.run('UPDATE riders SET ranking = NULL', (err) => {
+            if (err) console.error('Error resetting rankings:', err.message);
+            resolve();
+        });
+    });
+
     const url = 'https://api.travsport.se/webapi/charts/listpersonchart/organisation/TROT?breed=B&category=1&chartTypeSearchParam=1&gender=B&homeTrack=S&licenseType=S&list=S&onlyYouth=false&raceOnTrack=A&returnNumberOfEntries=2000&sulkyOrMonte=B&typeOfRace=B&year=2026';
 
     try {

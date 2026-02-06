@@ -201,7 +201,7 @@ app.post('/api/clean-database', async (req, res) => {
 });
 
 app.get('/api/top-riders', (req, res) => {
-    db.all(`SELECT name, win_rate, ranking, starts, first_places, second_places, third_places, fourth_places, fifth_places FROM riders WHERE ranking IS NOT NULL ORDER BY ranking ASC LIMIT 2000`, (err, rows) => {
+    db.all(`SELECT name, win_rate, ranking, starts, first_places, second_places, third_places, fourth_places, fifth_places FROM riders WHERE ranking > 0 ORDER BY ranking ASC LIMIT 2000`, (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
