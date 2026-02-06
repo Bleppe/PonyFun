@@ -26,8 +26,8 @@
                     <th class="stat-cell">1:a</th>
                     <th class="stat-cell">2:a</th>
                     <th class="stat-cell">3:a</th>
-                    <th class="stat-cell">4:a</th>
-                    <th class="stat-cell">5:a</th>
+                    <th class="stat-cell hide-mobile-stat">4:a</th>
+                    <th class="stat-cell hide-mobile-stat">5:a</th>
                     <th class="stat-cell">Seger %</th>
                 </tr>
             </thead>
@@ -39,8 +39,8 @@
                     <td class="stat-cell">{{ rider.first_places }}</td>
                     <td class="stat-cell">{{ rider.second_places }}</td>
                     <td class="stat-cell">{{ rider.third_places }}</td>
-                    <td class="stat-cell">{{ rider.fourth_places }}</td>
-                    <td class="stat-cell">{{ rider.fifth_places }}</td>
+                    <td class="stat-cell hide-mobile-stat">{{ rider.fourth_places }}</td>
+                    <td class="stat-cell hide-mobile-stat">{{ rider.fifth_places }}</td>
                     <td class="stat-cell win-highlight">
                         {{ (rider.win_rate * 100).toFixed(1) }}%
                     </td>

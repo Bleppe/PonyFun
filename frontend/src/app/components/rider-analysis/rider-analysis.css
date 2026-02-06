@@ -47,3 +47,64 @@
 .analysis-table td {
     vertical-align: middle;
 }
+
+/* ========================================
+   RESPONSIVE DESIGN - RIDER ANALYSIS
+   ======================================== */
+
+@media (max-width: 768px) {
+    .nav-row {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .nav-row h1 {
+        font-size: 1.4rem;
+    }
+
+    .selection-controls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .save-btn {
+        width: 100%;
+    }
+
+    /* Show scroll hint on mobile */
+    .scroll-hint {
+        display: block;
+    }
+
+    /* Hide less essential stats on narrow mobile */
+    .hide-mobile-stat {
+        display: none !important;
+    }
+
+    .analysis-table {
+        font-size: 0.8rem;
+    }
+
+    th,
+    td {
+        padding: 0.6rem 0.4rem;
+    }
+
+    .name-cell {
+        min-width: 100px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+@media (max-width: 375px) {
+    .nav-row h1 {
+        font-size: 1.2rem;
+    }
+
+    .analysis-table {
+        font-size: 0.75rem;
+    }
+}
