@@ -462,6 +462,7 @@
     display: flex;
     gap: 10px;
     margin-left: auto;
+    align-items: center;
 }
 
 .save-btn {
@@ -538,12 +539,6 @@ tr.selected {
     /* Very light purple highlight */
 }
 
-.selection-controls {
-    display: flex;
-    gap: 10px;
-    margin-left: auto;
-    align-items: center;
-}
 
 .button-divider {
     width: 2px;
