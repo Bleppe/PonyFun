@@ -35,7 +35,7 @@
                     <th class="select-cell">Select</th>
                     <th class="num-cell">#</th>
                     <th>Rider</th>
-                    <th class="hide-mobile">Rank</th>
+                    <th>Rank</th>
                     <th class="stat-cell hide-mobile">Starts</th>
                     <th class="stat-cell hide-mobile">1:a</th>
                     <th class="stat-cell hide-mobile">2:a</th>
@@ -57,7 +57,7 @@
                     <td class="rider-name-cell">
                         {{ horse.rider }}
                     </td>
-                    <td class="hide-mobile">
+                    <td>
                         <span class="rider-rank" *ngIf="horse.rider_ranking">#{{ horse.rider_ranking }}</span>
                         <span class="no-rank" *ngIf="!horse.rider_ranking">-</span>
                     </td>
