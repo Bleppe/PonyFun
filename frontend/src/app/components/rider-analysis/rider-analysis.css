@@ -54,13 +54,17 @@
 
 @media (max-width: 768px) {
     .nav-row {
+        display: flex;
+        /* Use flex for easier vertical stacking */
         flex-direction: column;
         gap: 1rem;
         text-align: center;
+        align-items: center;
     }
 
     .nav-row h1 {
         font-size: 1.4rem;
+        margin: 0.5rem 0;
     }
 
     .selection-controls {
@@ -75,11 +79,6 @@
     /* Show scroll hint on mobile */
     .scroll-hint {
         display: block;
-    }
-
-    /* Hide less essential stats on narrow mobile */
-    .hide-mobile-stat {
-        display: none !important;
     }
 
     .analysis-table {

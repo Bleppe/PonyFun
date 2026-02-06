@@ -33,8 +33,62 @@
 
 .analysis-table td {
     padding: 1.2rem 1rem;
+    vertical-align: middle;
 }
 
 .rider-rank {
     display: inline-flex;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN - RACE RIDER ANALYSIS
+   ======================================== */
+
+@media (max-width: 768px) {
+    .nav-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .header-nav {
+        flex-direction: column;
+        width: 100%;
+        min-width: auto;
+    }
+
+    .selection-controls {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+        margin-left: 0;
+    }
+
+    .button-divider {
+        display: none;
+    }
+
+    .toggle-view-btn,
+    .save-btn,
+    .deselect-btn {
+        width: 100%;
+    }
+
+    .analysis-table td {
+        padding: 0.6rem 0.4rem;
+        font-size: 0.8rem;
+    }
+
+    .rider-name-cell {
+        min-width: 100px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+@media (max-width: 375px) {
+    .header-nav h1 {
+        font-size: 1.1rem;
+    }
 }
