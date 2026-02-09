@@ -29,9 +29,15 @@
         <div class="venue-header" (click)="toggleGroup(key)">
           <div class="header-left">
             <h2 class="venue-title">{{ key }}</h2>
-            <span class="system-cost" *ngIf="calculateSystemCost(key) > 0">
-              System Cost: {{ calculateSystemCost(key) | number:'1.2-2' }} SEK
-            </span>
+            <div class="system-cost-details" *ngIf="calculateSystemCost(key) > 0">
+              <span class="system-cost">System Cost: {{ calculateSystemCost(key) | number:'1.2-2' }} SEK</span>
+              <div class="participant-calculator">
+                <input type="number" [(ngModel)]="participants" min="1" class="participants-input" />
+                <span class="cost-per-person">
+                  ({{ calculateSystemCost(key) / participants | number:'1.2-2' }} SEK/person)
+                </span>
+              </div>
+            </div>
           </div>
           <span class="toggle-icon" [class.collapsed]="!isGroupExpanded(key)">▼</span>
         </div>

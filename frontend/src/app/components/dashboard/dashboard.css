@@ -16,6 +16,15 @@
     gap: 1.5rem;
 }
 
+.system-cost-details {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    /* Allow wrapping on small screens */
+}
+
 .system-cost {
     background: rgba(0, 0, 0, 0.3);
     color: var(--sparkle-cyan);
@@ -25,6 +34,46 @@
     font-weight: 600;
     border: 1px solid rgba(34, 211, 238, 0.3);
     box-shadow: 0 0 10px rgba(34, 211, 238, 0.1);
+}
+
+.participant-calculator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.1);
+}
+
+.participants-input {
+    width: 45px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--magic-purple);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    text-align: center;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.participants-input:focus {
+    border-color: var(--dream-pink);
+    box-shadow: 0 0 8px rgba(249, 168, 212, 0.4);
+}
+
+.cost-per-person {
+    background: linear-gradient(90deg, #f9a8d4, #fcd34d, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 0.95rem;
+    font-weight: 800;
+    filter: drop-shadow(0 0 5px rgba(249, 168, 212, 0.5));
+    letter-spacing: 0.5px;
 }
 
 .venue-header:hover {

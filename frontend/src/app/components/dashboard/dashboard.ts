@@ -16,6 +16,7 @@ export class DashboardComponent implements OnInit {
   upcomingRaces: any[] = [];
   loading = false;
   source: string = 'atg';
+  participants: number = 7;
   selections: any[] = [];
 
   constructor(private raceService: RaceService) { }
